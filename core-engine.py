@@ -7,14 +7,14 @@ pygame.init()
 WIDTH, HEIGHT = 512, 512
 SQUARE_SIZE = WIDTH // 8
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("StratoMind Chess Engine")
+pygame.display.set_caption("Neural Engine Chess AI")
 
 # Load piece images (assumes you have 64x64 PNGs named like 'wP.png', 'bK.png' in a 'pieces' folder)
 PIECE_IMAGES = {}
 for color in ['w', 'b']:
     for piece in ['P', 'N', 'B', 'R', 'Q', 'K']:
         PIECE_IMAGES[color + piece] = pygame.transform.scale(
-            pygame.image.load(f"pieces/{color}{piece}.png"), (SQUARE_SIZE, SQUARE_SIZE)
+            pygame.image.load(f"pieces/{color}{piece}.svg"), (SQUARE_SIZE, SQUARE_SIZE)
         )
 
 # Chess board and piece mapping
