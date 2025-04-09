@@ -143,7 +143,7 @@ def play_game():
         # AI move (Black)
         if not board.turn and not board.is_game_over():
             print("AI thinking...")
-            ai_move = find_best_move(board, depth=3)
+            ai_move = find_best_move(board, depth=4)
             board.push(ai_move)
             draw_board(screen, board)
             pygame.display.flip()
