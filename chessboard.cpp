@@ -3,6 +3,7 @@
 #include <array>
 #include <iostream>
 
+
 // Define piece types and colors
 enum Piece { EMPTY, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 enum Color { WHITE, BLACK };
@@ -82,9 +83,23 @@ void printBoard(const Board& board) {
 }
 
 // Main function to test the board
+
 int main() {
-    Board board;
-    initializeBoard(board);
-    printBoard(board);
+    std::string answer;
+    std::cout << "Is X black(b) or white(w)? ";
+    std::getline(std::cin, answer); // Read user input
+
+    if (answer == "b") {
+        printf("black\n");
+    } else if (answer == "w") {
+        Board board;
+        initializeBoard(board);
+        printBoard(board);
+    } else {
+        printf("Error\n");
+    }
+
     return 0;
+
+    
 }
