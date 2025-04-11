@@ -1,7 +1,7 @@
 
 // This file has a purpose of mapping the chessboard to a 2d array.
 // INPUT: By default: w, but if the user switches, then b
-// OUTPUT: what colour NECAI is playing as w or b
+// OUTPUT: what colour NECAI is playing as w or b in a file called necai.txt
 
 #include <array>
 #include <iostream>
@@ -253,7 +253,7 @@ int main() {
     printBoard(board, blackPerspective);
 
     // Write color to file
-    std::ofstream outFile("necai_color.txt");
+    std::ofstream outFile("necai.txt");
     if (outFile.is_open()) {
         outFile << colorOutput;
         outFile.close();
