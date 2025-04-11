@@ -1,6 +1,7 @@
 import chess
 import pygame
 import time
+import random
 
 # Initialize Pygame
 pygame.init()
@@ -9,10 +10,20 @@ SQUARE_SIZE = WIDTH // 8
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Neural Engine Chess AI")
 
-# Load piece images (assumes you have 64x64 PNGs named like 'wP.png', 'bK.png' in a 'pieces' folder)
+# Colors
+LIGHT_SQUARE = (245, 222, 179)  # Wheat
+DARK_SQUARE = (139, 69, 19)     # Brown
+HIGHLIGHT = (255, 255, 0)       # Yellow for selected square
+TEXT_BG = (50, 50, 50)          # Dark background for prompt
+
+# Load fonts
+FONT = pygame.font.SysFont("arial", 24)
+
+# Load piece images (assumes 64x64 images in 'pieces' folder, e.g., 'wP.png', 'bK.png')
 PIECE_IMAGES = {}
 for color in ['w', 'b']:
     for piece in ['P', 'N', 'B', 'R', 'Q', 'K']:
+        # Change '.svg' to '.png' if using PNGs
         PIECE_IMAGES[color + piece] = pygame.transform.scale(
             pygame.image.load(f"pieces/{color}{piece}.svg"), (SQUARE_SIZE, SQUARE_SIZE)
         )
@@ -24,82 +35,16 @@ PIECE_MAP = {
     chess.ROOK: 'R', chess.QUEEN: 'Q', chess.KING: 'K'
 }
 COLOR_MAP = {chess.WHITE: 'w', chess.BLACK: 'b'}
-"""
-# Piece values and evaluation
-PIECE_VALUES = {
-    chess.PAWN: 100, chess.KNIGHT: 320, chess.BISHOP: 330,
-    chess.ROOK: 500, chess.QUEEN: 900, chess.KING: 20000
-}
 
-def evaluate_board(board):
-    if board.is_checkmate():
-        return -9999 if board.turn else 9999
-    if board.is_stalemate() or board.is_insufficient_material():
-        return 0
-    score = 0
-    for square in chess.SQUARES:
-        piece = board.piece_at(square)
-        if piece:
-            value = PIECE_VALUES[piece.piece_type]
-            score += value if piece.color == chess.WHITE else -value
-            if square in [chess.D4, chess.D5, chess.E4, chess.E5]:
-                score += 10 if piece.color == chess.WHITE else -10
-    return score
-
-# Minimax with Alpha-Beta pruning
-def minimax(board, depth, alpha, beta, maximizing_player):
-    if depth == 0 or board.is_game_over():
-        return evaluate_board(board)
-    if maximizing_player:
-        max_eval = float('-inf')
-        for move in board.legal_moves:
-            board.push(move)
-            eval = minimax(board, depth - 1, alpha, beta, False)
-            board.pop()
-            max_eval = max(max_eval, eval)
-            alpha = max(alpha, eval)
-            if beta <= alpha:
-                break
-        return max_eval
-    else:
-        min_eval = float('inf')
-        for move in board.legal_moves:
-            board.push(move)
-            eval = minimax(board, depth - 1, alpha, beta, True)
-            board.pop()
-            min_eval = min(min_eval, eval)
-            beta = min(beta, eval)
-            if beta <= alpha:
-                break
-        return min_eval
-
+# Simple AI for testing (replace with your minimax if desired)
 def find_best_move(board, depth=3):
-    best_move = None
-    best_value = float('-inf') if board.turn else float('inf')
-    alpha = float('-inf')
-    beta = float('inf')
-    for move in board.legal_moves:
-        board.push(move)
-        value = minimax(board, depth - 1, alpha, beta, not board.turn)
-        board.pop()
-        if board.turn:
-            if value > best_value:
-                best_value = value
-                best_move = move
-            alpha = max(alpha, value)
-        else:
-            if value < best_value:
-                best_value = value
-                best_move = move
-            beta = min(beta, value)
-    return best_move
-"""
+    return random.choice(list(board.legal_moves))
+
 # Draw the board and pieces
 def draw_board(screen, board, selected_square=None):
-    colors = [(245, 222, 179), (139, 69, 19)]  # Light and dark squares (wheat and brown)
     for row in range(8):
         for col in range(8):
-            color = colors[(row + col) % 2]
+            color = LIGHT_SQUARE if (row + col) % 2 == 0 else DARK_SQUARE
             pygame.draw.rect(screen, color, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
             piece = board.piece_at(chess.square(col, 7 - row))
             if piece:
@@ -107,7 +52,46 @@ def draw_board(screen, board, selected_square=None):
                 screen.blit(PIECE_IMAGES[piece_key], (col * SQUARE_SIZE, row * SQUARE_SIZE))
     if selected_square is not None:
         col, row = chess.square_file(selected_square), 7 - chess.square_rank(selected_square)
-        pygame.draw.rect(screen, (255, 255, 0), (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE), 3)
+        pygame.draw.rect(screen, HIGHLIGHT, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE), 3)
+
+# Display prompt and get input
+def get_ai_color(screen):
+    input_string = ""
+    ai_color = None
+    prompt = "NECAI play white or black?"
+    error_message = ""
+    while ai_color is None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    if input_string.lower() == "white":
+                        ai_color = chess.WHITE
+                    elif input_string.lower() == "black":
+                        ai_color = chess.BLACK
+                    else:
+                        error_message = "Please enter 'white' or 'black'"
+                        input_string = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    input_string = input_string[:-1]
+                elif event.unicode.isprintable():
+                    input_string += event.unicode
+
+        # Draw prompt screen
+        screen.fill(TEXT_BG)
+        prompt_text = FONT.render(prompt, True, (255, 255, 255))
+        input_text = FONT.render(input_string, True, (255, 255, 255))
+        error_text = FONT.render(error_message, True, (255, 0, 0))
+        
+        screen.blit(prompt_text, (WIDTH // 2 - prompt_text.get_width() // 2, HEIGHT // 2 - 50))
+        screen.blit(input_text, (WIDTH // 2 - input_text.get_width() // 2, HEIGHT // 2))
+        screen.blit(error_text, (WIDTH // 2 - error_text.get_width() // 2, HEIGHT // 2 + 50))
+        
+        pygame.display.flip()
+    
+    return ai_color
 
 # Main game loop
 def play_game():
@@ -115,23 +99,27 @@ def play_game():
     selected_square = None
     running = True
 
+    # Get AI color
+    ai = get_ai_color(screen)  # Stores chess.WHITE or chess.BLACK
+    human = chess.BLACK if ai == chess.WHITE else chess.WHITE
+
     while running and not board.is_game_over():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and board.turn:  # White's turn (human)
+            elif event.type == pygame.MOUSEBUTTONDOWN and board.turn == human:
                 x, y = event.pos
                 col, row = x // SQUARE_SIZE, y // SQUARE_SIZE
                 square = chess.square(col, 7 - row)
                 if selected_square is None:
-                    if board.piece_at(square) and board.piece_at(square).color == chess.WHITE:
+                    if board.piece_at(square) and board.piece_at(square).color == human:
                         selected_square = square
                 else:
                     move = chess.Move(selected_square, square)
                     if move in board.legal_moves:
                         board.push(move)
                         selected_square = None
-                    elif board.piece_at(square) and board.piece_at(square).color == chess.WHITE:
+                    elif board.piece_at(square) and board.piece_at(square).color == human:
                         selected_square = square
                     else:
                         selected_square = None
@@ -140,14 +128,14 @@ def play_game():
         draw_board(screen, board, selected_square)
         pygame.display.flip()
 
-        # AI move (Black)
-        if not board.turn and not board.is_game_over():
+        # AI move
+        if not board.is_game_over() and board.turn == ai:
             print("AI thinking...")
-            ai_move = find_best_move(board, depth=4)
+            ai_move = find_best_move(board)
             board.push(ai_move)
             draw_board(screen, board)
             pygame.display.flip()
-            time.sleep(0.5)  # Brief pause to see AI move
+            time.sleep(0.5)
 
         clock.tick(60)
 
