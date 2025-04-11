@@ -1,3 +1,17 @@
+#Added by Hang L. 
+
+.vscode/
+chessboard.dSYM
+
+
+
+
+
+
+
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
