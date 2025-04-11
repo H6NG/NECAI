@@ -4,7 +4,8 @@
 chessboard.dSYM/
 .venv/
 .DS_Store/
-*.chessboard
+.DS_Store
+chessboard
 
 
 
