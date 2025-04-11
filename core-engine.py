@@ -24,7 +24,7 @@ PIECE_MAP = {
     chess.ROOK: 'R', chess.QUEEN: 'Q', chess.KING: 'K'
 }
 COLOR_MAP = {chess.WHITE: 'w', chess.BLACK: 'b'}
-
+"""
 # Piece values and evaluation
 PIECE_VALUES = {
     chess.PAWN: 100, chess.KNIGHT: 320, chess.BISHOP: 330,
@@ -93,7 +93,7 @@ def find_best_move(board, depth=3):
                 best_move = move
             beta = min(beta, value)
     return best_move
-
+"""
 # Draw the board and pieces
 def draw_board(screen, board, selected_square=None):
     colors = [(245, 222, 179), (139, 69, 19)]  # Light and dark squares (wheat and brown)
