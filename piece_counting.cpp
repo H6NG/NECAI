@@ -1,0 +1,1 @@
+//This file is mainly for counting the pieces on the chessboard
