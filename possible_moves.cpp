@@ -1,0 +1,1 @@
+// This file has a purpose of providing a function to get all possible moves for a given piece on the chessboard.
