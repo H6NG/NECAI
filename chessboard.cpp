@@ -5,6 +5,7 @@
 
 #include <array>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -112,7 +113,7 @@ void printBoard(const Board& board, bool blackPerspective = false) {
         std::cout << "  a b c d e f g h\n";
     }
 }
-
+/*
 // Move structure
 struct Move {
     int from;
@@ -146,6 +147,7 @@ int evaluate(const Board& board) {
     }
     return score;
 }
+
 
 // Minimax algorithm for AI thinking
 int minimax(Board& board, int depth, bool maximizingPlayer, Color aiColor) {
@@ -218,6 +220,7 @@ Move findBestMove(Board& board, Color aiColor) {
     }
     return bestMove;
 }
+*/
 
 // Main function to test the board and AI
 int main() {
@@ -249,6 +252,15 @@ int main() {
     std::cout << "Board from " << (blackPerspective ? "Black" : "White") << " perspective:\n";
     printBoard(board, blackPerspective);
 
+    // Write color to file
+    std::ofstream outFile("necai_color.txt");
+    if (outFile.is_open()) {
+        outFile << colorOutput;
+        outFile.close();
+    } else {
+        std::cerr << "Error: Could not write to necai_color.txt\n";
+    }
+/*
     // Find and display AI's best move
     std::cout << "\nNECAI is thinking...\n";
     Move bestMove = findBestMove(board, aiColor);
@@ -259,6 +271,6 @@ int main() {
     } else {
         std::cout << "No valid moves found.\n";
     }
-
+*/
     return 0;
 }
