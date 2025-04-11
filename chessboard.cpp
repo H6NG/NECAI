@@ -86,7 +86,7 @@ void printBoard(const Board& board) {
 
 int main() {
     std::string answer;
-    std::cout << "Is X black(b) or white(w)? ";
+    std::cout << "Is NECAI black(b) or white(w)? ";
     std::getline(std::cin, answer); // Read user input
 
     if (answer == "b") {
