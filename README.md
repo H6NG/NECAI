@@ -7,3 +7,7 @@ Open Source Project.
 
 
 Have one and only purpose, to learn. 
+
+
+g++ app.cpp -o app
+./app
