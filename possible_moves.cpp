@@ -1,93 +1,241 @@
 // This file has a purpose of providing a function to get all possible moves for a given piece on the chessboard.
+// JUST POSSIBLE MOVES REGARDLESS OF WHO'S PLAYING - you call possible_moves.cpp when NECAI is playing 
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
+#include <sstream>
 
-// Convert row (0-7) and col (0-7) to algebraic notation (e.g., row=6, col=4 -> "e2")
-std::string to_algebraic(int row, int col) {
-    std::string move;
-    move += static_cast<char>(col + 'a');
-    move += static_cast<char>(7 - row + '1');
-    return move;
+struct Position {
+    int row, col; // Row (0-7, 8 to 1), Col (0-7, h to a in necai.txt)
+};
+
+// Piece struct to store type and color
+struct Piece {
+    char symbol; // e.g., 'P', 'p', 'N', 'n'
+    Position pos; // Board position
+    bool is_white; // True if white, false if black
+};
+
+// Move struct to store source and destination
+struct Move {
+    Position from, to;
+    std::string notation; // Algebraic notation (e.g., "e2e4", "Nf3")
+};
+
+// Convert necai.txt column (h=0, a=7) to standard (a=0, h=7)
+int necai_col_to_std(int col) {
+    return 7 - col;
 }
 
-// Add a move (from_row, from_col to to_row, to_col) to the moves list
-void add_move(int from_row, int from_col, int to_row, int to_col, std::vector<std::string>& moves) {
-    if (to_row >= 0 && to_row < 8 && to_col >= 0 && to_col < 8) {
-        std::string move = to_algebraic(from_row, from_col) + to_algebraic(to_row, to_col);
-        moves.push_back(move);
+// Convert row (0-based, 8 at top) to standard (1-based, 1 at bottom)
+int row_to_std(int row) {
+    return 8 - row;
+}
+
+// Convert standard column (0=a) to algebraic (a-h)
+char col_to_file(int col) {
+    return 'a' + col;
+}
+
+// Generate algebraic notation for a move
+std::string move_to_notation(const Move& move, char piece, bool is_capture, const std::vector<Piece>& pieces) {
+    std::string notation;
+    int from_col = necai_col_to_std(move.from.col);
+    int to_col = necai_col_to_std(move.to.col);
+    int from_row = row_to_std(move.from.row);
+    int to_row = row_to_std(move.to.row);
+
+    // For non-pawns, include piece letter (e.g., N for knight)
+    if (piece != 'P' && piece != 'p') {
+        notation += toupper(piece);
     }
+
+    // Check for ambiguity (same piece type can move to same square)
+    bool ambiguous_file = false, ambiguous_row = false;
+    for (const auto& p : pieces) {
+        if (p.symbol == piece && (p.pos.row != move.from.row || p.pos.col != move.from.col)) {
+            // Check if this piece could move to the same destination
+            // Simplified: just check if it's the same piece type
+            if (p.pos.row == move.from.row) ambiguous_row = true;
+            if (p.pos.col == move.from.col) ambiguous_file = true;
+        }
+    }
+
+    // Include file or rank if ambiguous
+    if (piece != 'P' && piece != 'p') {
+        if (ambiguous_file || ambiguous_row) {
+            notation += col_to_file(from_col);
+            if (ambiguous_row) {
+                notation += std::to_string(from_row);
+            }
+        }
+    } else {
+        // For pawns, include file only on capture
+        if (is_capture) {
+            notation += col_to_file(from_col);
+        }
+    }
+
+    // Add capture symbol
+    if (is_capture) {
+        notation += 'x';
+    }
+
+    // Add destination square
+    notation += col_to_file(to_col);
+    notation += std::to_string(to_row);
+
+    return notation;
 }
 
-// Generate pawn moves (simplified for White; Black would reverse direction)
-void pawn_moves(int row, int col, char board[8][8], bool is_white, std::vector<std::string>& moves) {
-    int dir = is_white ? -1 : 1; // White moves up (row decreases), Black moves down
-    int start_row = is_white ? 6 : 1; // Starting row for double moves
+// Check if position is within board
+bool is_valid_pos(int row, int col) {
+    return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
 
-    // Forward move (1 square)
-    int to_row = row + dir;
-    if (to_row >= 0 && to_row < 8 && board[to_row][col] == '.') {
-        add_move(row, col, to_row, col, moves);
-        // Double move from starting position
-        if (row == start_row && board[to_row][col] == '.' && board[to_row + dir][col] == '.') {
-            add_move(row, col, to_row + dir, col, moves);
+// Check if target square is empty or capturable
+bool can_occupy(int row, int col, const char board[8][8], bool is_white) {
+    if (!is_valid_pos(row, col)) return false;
+    if (board[row][col] == '.') return true;
+    bool target_is_white = isupper(board[row][col]);
+    return target_is_white != is_white; // Can capture opponent's piece
+}
+
+// Generate pawn moves
+void generate_pawn_moves(const Piece& piece, const char board[8][8], std::vector<Move>& moves, const std::vector<Piece>& pieces) {
+    Position from = piece.pos;
+    int dir = piece.is_white ? -1 : 1; // White moves up (-1), Black down (+1)
+    int start_row = piece.is_white ? 6 : 1; // 2nd rank for white (6), 7th for black (1)
+
+    // Single push
+    int new_row = from.row + dir;
+    if (is_valid_pos(new_row, from.col) && board[new_row][from.col] == '.') {
+        Move move = {from, {new_row, from.col}, ""};
+        move.notation = move_to_notation(move, piece.symbol, false, pieces);
+        moves.push_back(move);
+
+        // Double push from starting rank
+        if (from.row == start_row) {
+            new_row = from.row + 2 * dir;
+            if (board[new_row][from.col] == '.' && board[from.row + dir][from.col] == '.') {
+                Move double_move = {from, {new_row, from.col}, ""};
+                double_move.notation = move_to_notation(double_move, piece.symbol, false, pieces);
+                moves.push_back(double_move);
+            }
         }
     }
 
     // Captures
-    for (int dc : {-1, 1}) {
-        int to_col = col + dc;
-        if (to_row >= 0 && to_row < 8 && to_col >= 0 && to_col < 8 && board[to_row][to_col] != '.') {
-            // Check if the target is an enemy piece
-            if (is_white && board[to_row][to_col] >= 'a' && board[to_row][to_col] <= 'z') {
-                add_move(row, col, to_row, to_col, moves);
-            } else if (!is_white && board[to_row][to_col] >= 'A' && board[to_row][to_col] <= 'Z') {
-                add_move(row, col, to_row, to_col, moves);
-            }
+    int capture_cols[2] = {from.col - 1, from.col + 1};
+    for (int col : capture_cols) {
+        if (is_valid_pos(new_row, col) && board[new_row][col] != '.' && can_occupy(new_row, col, board, piece.is_white)) {
+            Move capture = {from, {new_row, col}, ""};
+            capture.notation = move_to_notation(capture, piece.symbol, true, pieces);
+            moves.push_back(capture);
         }
     }
+
+    // Note: En passant requires game history (previous move). Omitted for simplicity.
 }
 
 // Generate knight moves
-void knight_moves(int row, int col, char board[8][8], bool is_white, std::vector<std::string>& moves) {
-    const std::vector<std::pair<int, int>> offsets = {
+void generate_knight_moves(const Piece& piece, const char board[8][8], std::vector<Move>& moves, const std::vector<Piece>& pieces) {
+    Position from = piece.pos;
+    int offsets[8][2] = {
         {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
         {1, -2}, {1, 2}, {2, -1}, {2, 1}
     };
 
     for (const auto& offset : offsets) {
-        int to_row = row + offset.first;
-        int to_col = col + offset.second;
-        if (to_row >= 0 && to_row < 8 && to_col >= 0 && to_col < 8) {
-            // Empty square or enemy piece
-            if (board[to_row][to_col] == '.' ||
-                (is_white && board[to_row][to_col] >= 'a' && board[to_row][to_col] <= 'z') ||
-                (!is_white && board[to_row][to_col] >= 'A' && board[to_row][to_col] <= 'Z')) {
-                add_move(row, col, to_row, to_col, moves);
+        int new_row = from.row + offset[0];
+        int new_col = from.col + offset[1];
+        if (can_occupy(new_row, new_col, board, piece.is_white)) {
+            Move move = {from, {new_row, new_col}, ""};
+            bool is_capture = board[new_row][new_col] != '.';
+            move.notation = move_to_notation(move, piece.symbol, is_capture, pieces);
+            moves.push_back(move);
+        }
+    }
+}
+
+// Generate sliding moves (bishop, rook, queen)
+void generate_sliding_moves(const Piece& piece, const char board[8][8], std::vector<Move>& moves, const std::vector<Piece>& pieces, bool diagonal, bool straight) {
+    Position from = piece.pos;
+    int directions[8][2] = {
+        {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, // Diagonals
+        {-1, 0}, {1, 0}, {0, -1}, {0, 1}   // Straights
+    };
+    int start = diagonal ? 0 : 4;
+    int end = straight ? 8 : 4;
+
+    for (int i = start; i < end; ++i) {
+        int row = from.row;
+        int col = from.col;
+        while (true) {
+            row += directions[i][0];
+            col += directions[i][1];
+            if (!is_valid_pos(row, col)) break;
+            if (can_occupy(row, col, board, piece.is_white)) {
+                Move move = {from, {row, col}, ""};
+                bool is_capture = board[row][col] != '.';
+                move.notation = move_to_notation(move, piece.symbol, is_capture, pieces);
+                moves.push_back(move);
+                if (board[row][col] != '.') break; // Stop after capture
+            } else {
+                break; // Blocked by own piece
             }
         }
     }
 }
 
-// Generate all moves for the current player
-std::vector<std::string> generate_moves(char board[8][8], bool is_white) {
-    std::vector<std::string> moves;
-    for (int row = 0; row < 8; ++row) {
-        for (int col = 0; col < 8; ++col) {
-            char piece = board[row][col];
-            // Check if the piece belongs to the current player
-            if (is_white && piece >= 'A' && piece <= 'Z') {
-                if (piece == 'P') pawn_moves(row, col, board, is_white, moves);
-                else if (piece == 'N') knight_moves(row, col, board, is_white, moves);
-                // Add other pieces (B, R, Q, K) here
-            } else if (!is_white && piece >= 'a' && piece <= 'z') {
-                if (piece == 'p') pawn_moves(row, col, board, is_white, moves);
-                else if (piece == 'n') knight_moves(row, col, board, is_white, moves);
-                // Add other pieces (b, r, q, k) here
-            }
+// Generate king moves
+void generate_king_moves(const Piece& piece, const char board[8][8], std::vector<Move>& moves, const std::vector<Piece>& pieces) {
+    Position from = piece.pos;
+    int offsets[8][2] = {
+        {-1, -1}, {-1, 0}, {-1, 1},
+        {0, -1},           {0, 1},
+        {1, -1}, {1, 0}, {1, 1}
+    };
+
+    for (const auto& offset : offsets) {
+        int new_row = from.row + offset[0];
+        int new_col = from.col + offset[1];
+        if (can_occupy(new_row, new_col, board, piece.is_white)) {
+            Move move = {from, {new_row, new_col}, ""};
+            bool is_capture = board[new_row][new_col] != '.';
+            move.notation = move_to_notation(move, piece.symbol, is_capture, pieces);
+            moves.push_back(move);
         }
+    }
+
+    // Note: Castling requires checking king/rook movement history and squares. Omitted for simplicity.
+}
+
+// Generate moves for a piece
+std::vector<Move> generate_moves(const Piece& piece, const char board[8][8], const std::vector<Piece>& pieces) {
+    std::vector<Move> moves;
+    char type = toupper(piece.symbol);
+    switch (type) {
+        case 'P':
+            generate_pawn_moves(piece, board, moves, pieces);
+            break;
+        case 'N':
+            generate_knight_moves(piece, board, moves, pieces);
+            break;
+        case 'B':
+            generate_sliding_moves(piece, board, moves, pieces, true, false);
+            break;
+        case 'R':
+            generate_sliding_moves(piece, board, moves, pieces, false, true);
+            break;
+        case 'Q':
+            generate_sliding_moves(piece, board, moves, pieces, true, true);
+            break;
+        case 'K':
+            generate_king_moves(piece, board, moves, pieces);
+            break;
     }
     return moves;
 }
@@ -95,38 +243,46 @@ std::vector<std::string> generate_moves(char board[8][8], bool is_white) {
 int main() {
     std::ifstream file("necai.txt");
     if (!file.is_open()) {
-        std::cerr << "Error: Could not open necai.txt" << std::endl;
+        std::cerr << "Error: Could not open necai.txt\n";
         return 1;
     }
 
-    std::string color;
-    std::getline(file, color); // Read "w" or "b"
-    bool is_white = (color == "w");
+    std::string line;
+    std::getline(file, line); // Read color
+    bool necai_is_white = (line == "w");
 
-    // Initialize board (row 0 = rank 8, col 0 = file a)
+    // Read board
     char board[8][8];
+    std::vector<Piece> necai_pieces;
     for (int row = 0; row < 8; ++row) {
-        std::string line;
         std::getline(file, line);
-        // Extract pieces (skip rank number and spaces)
+        std::istringstream iss(line);
+        std::string token;
         int col = 0;
-        for (char c : line) {
-            if (c == ' ' || (c >= '1' && c <= '8')) continue; // Skip spaces and rank numbers
-            if (col < 8) {
-                board[row][col] = c;
-                ++col;
+        while (iss >> token && col < 8) {
+            board[row][col] = token[0];
+            if (board[row][col] != '.') {
+                bool is_white = isupper(board[row][col]);
+                if (is_white == necai_is_white) {
+                    necai_pieces.push_back({board[row][col], {row, col}, is_white});
+                }
             }
+            ++col;
         }
     }
     file.close();
 
-    // Generate moves
-    auto moves = generate_moves(board, is_white);
-
-    // Output moves
-    std::cout << "Possible moves for " << (is_white ? "White" : "Black") << ":\n";
-    for (const auto& move : moves) {
-        std::cout << move << "\n";
+    // Generate and print moves for each piece
+    for (const auto& piece : necai_pieces) {
+        std::vector<Move> moves = generate_moves(piece, board, necai_pieces);
+        if (!moves.empty()) {
+            int std_col = necai_col_to_std(piece.pos.col);
+            int std_row = row_to_std(piece.pos.row);
+            std::cout << "Piece " << piece.symbol << " at " << col_to_file(std_col) << std_row << " can move to:\n";
+            for (const auto& move : moves) {
+                std::cout << "  " << move.notation << "\n";
+            }
+        }
     }
 
     return 0;

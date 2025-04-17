@@ -49,8 +49,8 @@ int main() {
     }
 
     // Output counts
-    std::cout << "White pieces: " << white_pieces << "\n";
-    std::cout << "Black pieces: " << black_pieces << "\n";
+    std::cout << "Black pieces: " << white_pieces << "\n";
+    std::cout << "White pieces: " << black_pieces << "\n";
 
     return 0;
 }
