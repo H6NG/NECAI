@@ -6,6 +6,13 @@ chessboard.dSYM/
 .DS_Store/
 .DS_Store
 chessboard
+algorithm.dSYM/
+possible_moves.dSYM/
+piece_counting.dSYM/
+updatecb.dSYM/
+algorithm
+piece_counting
+possible_moves
 
 
 
