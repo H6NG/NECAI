@@ -1,0 +1,1 @@
+//determines and write who's playing 
