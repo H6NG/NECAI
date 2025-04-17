@@ -127,12 +127,12 @@ int main() {
 
     if (answer == "b") {
         aiColor = BLACK;
-        blackPerspective = true;
+        blackPerspective = false;
         colorOutput = "b";
     } else {
         // Default to white for 'w' or invalid input
         aiColor = WHITE;
-        blackPerspective = false;
+        blackPerspective = true;
         colorOutput = "w";
     }
 
