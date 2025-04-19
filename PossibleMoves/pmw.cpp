@@ -1,6 +1,8 @@
 // This file has a purpose of providing a function to get all possible moves for a given piece on the chessboard.
 // JUST POSSIBLE MOVES REGARDLESS OF WHO'S PLAYING - you call possible_moves.cpp when NECAI is playing 
 
+// Possible Moves for white
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -62,7 +64,6 @@ public:
         std::cout << "  h g f e d c b a" << std::endl;
     }
 };
-
 
 //---------------------OK-----------------------//
 
@@ -150,6 +151,9 @@ int main() {
 
     // Generate and display all White moves
     ChessEngine engine(board);
+
+    //---------------------OK-----------------------//
+    
     std::vector<Move> moves = engine.generateAllWhiteMoves();
     std::cout << "\nAll possible moves for White:\n";
     for (const Move& move : moves) {
