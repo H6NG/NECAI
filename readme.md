@@ -37,8 +37,8 @@ NECAI/
 |-------|------|
 | Language | Python / C++ |
 | ML Framework | PyTorch |
-| Chess Library | python-chess |
-| Database | DuckDB + Parquet |
+| Chess Library | ??? |
+| Database | Hugging Face |
 | Dataset hosting | Hugging Face |
 | CI/CD | GitHub Actions |
 
