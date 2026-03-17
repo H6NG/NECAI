@@ -1,4 +1,4 @@
-# NECAI ♟️
+# NECAI
 **Neural Engine for Chess AI**
 
 A chess engine powered by machine learning, trained on 
@@ -19,7 +19,7 @@ inspired by AlphaZero and Leela Chess Zero.
 ## Dataset
 - Source: [Collection of Datasets](https://huggingface.co/datasets/h4ng/necai/tree/main)
 - Format: FEN positions stored as Parquet files
-- Hosted on: [Hugging Face](https://huggingface.co/datasets/YOUR_USERNAME/chess-positions-lichess)
+- Hosted on: [Hugging Face](https://huggingface.co/datasets/h4ng/necai/tree/main)
 - Filter: Both players rated 2000+, complete games only
 
 ## Project Structure
