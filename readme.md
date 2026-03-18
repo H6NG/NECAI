@@ -46,4 +46,4 @@ NECAI/
 🚧 Work in progress
 
 ## License
-[MIT](https://github.com/H6NG/sign-language-translator?tab=MIT-1-ov-file)
+[MIT](https://github.com/H6NG/NECAI?tab=MIT-1-ov-file)
