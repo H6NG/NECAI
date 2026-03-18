@@ -50,4 +50,4 @@ NECAI/
 
 ## Credit 
 
-[Lichess_Database] (https://database.lichess.org/)
+[Lichess Database](https://database.lichess.org/)
