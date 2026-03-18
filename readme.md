@@ -47,3 +47,7 @@ NECAI/
 
 ## License
 [MIT](https://github.com/H6NG/NECAI?tab=MIT-1-ov-file)
+
+## Credit 
+
+[Lichess_Database] (https://database.lichess.org/)
