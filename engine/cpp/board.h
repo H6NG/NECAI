@@ -38,5 +38,6 @@ class Board {
         void parse_en_passant(std::string ep_part); 
         void parse_halfmove(std::string hm_part); 
         void parse_fullmove(std::string fm_part);
+        void checkRep(); 
 
 }; 
