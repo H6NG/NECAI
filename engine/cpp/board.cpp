@@ -17,6 +17,9 @@ Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk
  * 
  * Details: 
  * 
+ * lowercase is for black pieces
+ * uppercase is for white pieces
+ * 
  * [LAST PAWN MOVE] is used for the 50-move rule
  * 0 means something just happened (pawn move or capture)
  * 
@@ -46,20 +49,94 @@ bool Board::is_white_turn(){
 
 void Board::parse_pieces(std::string board_part){
 
+    int index = 0; 
+
+    for(char c : board_part){
+
+        if(c == '/'){} //new line 
+        
+        else if(c >= '1' && c <= '8'){ //if they are numbers then it means that it's empty square/space
+            index += c - '0'; 
+        }
+        else{ //it has to be a piece
+            switch(c){
+                case 'P': squares[index] = WHITE_PAWN; break; 
+                case 'N': squares[index] = WHITE_KNIGHT; break;
+                case 'B': squares[index] = WHITE_BISHOP; break;
+                case 'R': squares[index] = WHITE_ROOK; break;
+                case 'Q': squares[index] = WHITE_QUEEN; break;
+                case 'K': squares[index] = WHITE_KING; break;
+                case 'p': squares[index] = BLACK_PAWN; break;
+                case 'n': squares[index] = BLACK_KNIGHT; break;
+                case 'b': squares[index] = BLACK_BISHOP; break;
+                case 'r': squares[index] = BLACK_ROOK; break;
+                case 'q': squares[index] = BLACK_QUEEN; break;
+                case 'k': squares[index] = BLACK_KING; break;
+            }
+            index++; 
+        }
+    }
 }
 void Board::parse_turn(std::string turn_part){
 
+    white_turn = (turn_part == "w"); 
 }
 void Board::parse_castling(std::string castle_part){
+
+    //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+    //find lookup is O(1) 
+    //npos means not found or no matches
+
+    castle_wk = (castle_part.find('K') != std::string::npos);
+    castle_wq = (castle_part.find('Q') != std::string::npos);
+    castle_bk = (castle_part.find('k') != std::string::npos);
+    castle_bq = (castle_part.find('q') != std::string::npos);
 
 }
 void Board::parse_en_passant(std::string ep_part){
 
+    //ep_part is a future potential move that one can take
+    // var en_passant tells the engine what is the possible move in board metrics
+
+    /** 
+     * file: a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7
+     * rank: 8=0, 7=1, 6=2, 5=3, 4=4, 3=5, 2=6, 1=7
+     */
+
+     /**
+      * Chess:          Array index:
+      * Rank 8 ──→      0  1  2  3  4  5  6  7
+      * Rank 7 ──→      8  9  10 11 12 13 14 15
+      * Rank 6 ──→      16 17 18 19 20 21 22 23
+      * Rank 5 ──→      24 25 26 27 28 29 30 31
+      * Rank 4 ──→      32 33 34 35 36 37 38 39
+      * Rank 3 ──→      40 41 42 43 44 45 46 47
+      * Rank 2 ──→      48 49 50 51 52 53 54 55
+      * Rank 1 ──→      56 57 58 59 60 61 62 63
+      *                  a  b  c  d  e  f  g  h
+
+      * where white is rank 1 and 2 at the beginning
+      * black is rank 7-8 at the beginning
+      */
+
+    if(ep_part == "-") en_passant = -1;
+    else{
+        int file = ep_part[0] - 'a'; 
+        int rank = 8 - (ep_part[1] - '0'); 
+        en_passant = rank * 8 + file; // after we can just do modulo 8 = rank and do division which the remainder = file 
+    }
+
 }
 void Board::parse_halfmove(std::string hm_part){
+
+    halfmove = std::stoi(hm_part);
 
 }
 
 void Board::parse_fullmove(std::string fm_part){
 
+    fullmove = std::stoi(fm_part); 
+
 }
+
+//checkRep()
