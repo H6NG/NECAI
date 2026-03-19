@@ -1,5 +1,5 @@
-# NECAI
-**Neural Engine for Chess AI**
+# `NECAI`
+**`Neural Engine for Chess AI`**
 
 A chess engine powered by machine learning, trained on 
 billions of positions from various databases combined into one. 

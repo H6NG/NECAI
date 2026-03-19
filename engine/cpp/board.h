@@ -16,7 +16,7 @@ class Board {
     public: 
 
         Board(); //it's own constructor I've decided to do OOP 
-        void load_fen(std::string fen); 
+        void load_fen(const std::string& fen); 
         bool is_white_turn(); 
 
     private: 
@@ -32,12 +32,12 @@ class Board {
         int fullmove;
 
         //helper func 
-        void parse_pieces(std::string board_part); 
-        void parse_turn(std::string turn_part); 
-        void parse_castling(std::string castle_part); 
-        void parse_en_passant(std::string ep_part); 
-        void parse_halfmove(std::string hm_part); 
-        void parse_fullmove(std::string fm_part);
+        void parse_pieces(const std::string& board_part); 
+        void parse_turn(const std::string& turn_part); 
+        void parse_castling(const std::string& castle_part); 
+        void parse_en_passant(const std::string& ep_part); 
+        void parse_halfmove(const std::string& hm_part); 
+        void parse_fullmove(const std::string& fm_part);
         void checkRep(); 
 
 }; 
