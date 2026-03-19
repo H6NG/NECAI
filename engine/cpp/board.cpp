@@ -75,6 +75,8 @@ void Board::load_fen(std::string fen){
 }
 bool Board::is_white_turn(){
 
+    return white_turn; 
+
 }
 
 void Board::parse_pieces(std::string board_part){
@@ -171,13 +173,30 @@ void Board::parse_fullmove(std::string fm_part){
 
 void Board::checkRep(){ //always need the prefix to include member func of Board
 
-    //only 2 opposite colour kings not more not less
     int num_king_white = 0; 
     int num_king_black = 0; 
 
     for(auto i = 0; i < 64; i++){
         if(squares[i] == WHITE_KING) num_king_white++; 
         if(squares[i] == BLACK_KING) num_king_black++; 
+    }
+    if (num_king_white != 1) throw std::invalid_argument("Board must have exactly one white king");
+    if (num_king_black != 1) throw std::invalid_argument("Board must have exactly one black king");
+
+    for (auto index = 0; index < 8; index++) {
+        if (squares[index] == WHITE_PAWN || squares[index] == BLACK_PAWN) throw std::invalid_argument("No pawns allowed on rank 8");
+        if (squares[56 + index] == WHITE_PAWN || squares[56 + index] == BLACK_PAWN) throw std::invalid_argument("No pawns allowed on rank 1");
+    }
+    if (en_passant != -1) {
+        int rank = en_passant / 8;
+        if (rank != 2 && rank != 5) throw std::invalid_argument("En passant square on invalid rank");
+    }
+
+    if (halfmove < 0) throw std::invalid_argument("Halfmove cannot be negative");
+    if (fullmove < 1) throw std::invalid_argument("Fullmove must be at least 1");
+
+    for (int i = 0; i < 64; i++) {
+        if (squares[i] < EMPTY || squares[i] > BLACK_KING) throw std::invalid_argument("Invalid piece value on board");
     }
 
 }
