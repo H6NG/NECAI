@@ -80,6 +80,19 @@ bool Board::is_white_turn(){
 
 }
 
+Piece Board::get_piece(int square) const{
+
+    return static_cast<Piece>(squares[square]);
+    //static_cast converts a type to another at compile time
+
+}
+
+int Board::get_en_passant() const{
+
+    return en_passant;
+
+}
+
 void Board::parse_pieces(const std::string& board_part){
 
     int index = 0; 

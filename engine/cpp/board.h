@@ -18,6 +18,8 @@ class Board {
         Board(); //it's own constructor I've decided to do OOP 
         void load_fen(const std::string& fen); 
         bool is_white_turn(); 
+        Piece get_piece(int square) const; 
+        int get_en_passant() const; 
 
     private: 
 
