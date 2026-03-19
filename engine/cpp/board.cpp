@@ -1,5 +1,6 @@
 #include "board.h"
 #include <sstream> 
+#include <stdexcept> //for exceptions no assertion with cassert
 
 Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk(false), castle_bq(false), en_passant(-1){
 
@@ -31,8 +32,36 @@ Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk
  */
 void Board::load_fen(std::string fen){
 
+    // Exceptions 
+
+    if(fen.empty()) throw std::invalid_argument("String FEN cannot be empty");
+
     std::istringstream ss(fen);
-    std::string section[8];
+    std::string section[6];
+
+    int count = 0;
+    while (count < 6 && ss >> section[count]) count++;
+    if(count != 6) throw std::invalid_argument("FEN must have exactly 6 parts"); 
+    if (section[1] != "w" && section[1] != "b") throw std::invalid_argument("FEN turn must be w or b");
+    for (char c : section[2]) {
+        if (section[2] != "-" && c != 'K' && c != 'Q' && c != 'k' && c != 'q')
+            throw std::invalid_argument("FEN castling rights invalid");
+    }
+    if (section[3] != "-") {
+        if (section[3].length() != 2)
+            throw std::invalid_argument("FEN en passant invalid");
+        if (section[3][0] < 'a' || section[3][0] > 'h')
+            throw std::invalid_argument("FEN en passant file invalid");
+        if (section[3][1] != '3' && section[3][1] != '6')
+            throw std::invalid_argument("FEN en passant rank invalid");
+    }
+    if (std::stoi(section[4]) < 0)
+        throw std::invalid_argument("FEN halfmove cannot be negative");
+    if (std::stoi(section[5]) < 1)
+        throw std::invalid_argument("FEN fullmove must be at least 1");
+
+    //Exception ending
+
 
     //ss is going to read one word until it hits a space
     for(auto i = 0; i < 6; i++) ss >> section[i];
@@ -42,6 +71,7 @@ void Board::load_fen(std::string fen){
     parse_en_passant(section[3]); 
     parse_halfmove(section[4]);
     parse_fullmove(section[5]); 
+    checkRep(); 
 }
 bool Board::is_white_turn(){
 
@@ -139,4 +169,15 @@ void Board::parse_fullmove(std::string fm_part){
 
 }
 
-//checkRep()
+void Board::checkRep(){ //always need the prefix to include member func of Board
+
+    //only 2 opposite colour kings not more not less
+    int num_king_white = 0; 
+    int num_king_black = 0; 
+
+    for(auto i = 0; i < 64; i++){
+        if(squares[i] == WHITE_KING) num_king_white++; 
+        if(squares[i] == BLACK_KING) num_king_black++; 
+    }
+
+}
