@@ -21,7 +21,7 @@ class Board {
 
     private: 
 
-        std::array<int,64> squares;
+        std::array<int,64> squares; //my int arr[][]
         bool white_turn; 
         bool castle_wk; 
         bool castle_wq; 
