@@ -2,6 +2,9 @@
 #include <sstream> 
 #include <stdexcept> //for exceptions no assertion with cassert
 
+//Time complexity of O(128) =~ O(1)
+//Space Complexity of O(n) because of istringstream ss(fen) so I change to by passing reference for O(1) 
+
 Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk(false), castle_bq(false), en_passant(-1){
 
     squares.fill(EMPTY);
@@ -30,7 +33,7 @@ Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk
  * and so on and so on 
  * 
  */
-void Board::load_fen(std::string fen){
+void Board::load_fen(const std::string& fen){
 
     // Exceptions 
 
@@ -40,6 +43,7 @@ void Board::load_fen(std::string fen){
     std::string section[6];
 
     int count = 0;
+    //ss is going to read one word until it hits a space
     while (count < 6 && ss >> section[count]) count++;
     if(count != 6) throw std::invalid_argument("FEN must have exactly 6 parts"); 
     if (section[1] != "w" && section[1] != "b") throw std::invalid_argument("FEN turn must be w or b");
@@ -62,12 +66,9 @@ void Board::load_fen(std::string fen){
 
     //Exception ending
 
-
-    //ss is going to read one word until it hits a space
-    for(auto i = 0; i < 6; i++) ss >> section[i];
     parse_pieces(section[0]);
-    parse_castling(section[1]); 
-    parse_turn(section[2]); 
+    parse_turn(section[1]); 
+    parse_castling(section[2]); 
     parse_en_passant(section[3]); 
     parse_halfmove(section[4]);
     parse_fullmove(section[5]); 
@@ -79,7 +80,7 @@ bool Board::is_white_turn(){
 
 }
 
-void Board::parse_pieces(std::string board_part){
+void Board::parse_pieces(const std::string& board_part){
 
     int index = 0; 
 
@@ -109,11 +110,11 @@ void Board::parse_pieces(std::string board_part){
         }
     }
 }
-void Board::parse_turn(std::string turn_part){
+void Board::parse_turn(const std::string& turn_part){
 
     white_turn = (turn_part == "w"); 
 }
-void Board::parse_castling(std::string castle_part){
+void Board::parse_castling(const std::string& castle_part){
 
     //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
     //find lookup is O(1) 
@@ -125,7 +126,7 @@ void Board::parse_castling(std::string castle_part){
     castle_bq = (castle_part.find('q') != std::string::npos);
 
 }
-void Board::parse_en_passant(std::string ep_part){
+void Board::parse_en_passant(const std::string& ep_part){
 
     //ep_part is a future potential move that one can take
     // var en_passant tells the engine what is the possible move in board metrics
@@ -159,13 +160,13 @@ void Board::parse_en_passant(std::string ep_part){
     }
 
 }
-void Board::parse_halfmove(std::string hm_part){
+void Board::parse_halfmove(const std::string& hm_part){
 
     halfmove = std::stoi(hm_part);
 
 }
 
-void Board::parse_fullmove(std::string fm_part){
+void Board::parse_fullmove(const std::string& fm_part){
 
     fullmove = std::stoi(fm_part); 
 
