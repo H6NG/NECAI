@@ -28,11 +28,15 @@ class Board {
         bool castle_bk; 
         bool castle_bq; 
         int en_passant; 
+        int halfmove; 
+        int fullmove;
 
         //helper func 
         void parse_pieces(std::string board_part); 
         void parse_turn(std::string turn_part); 
         void parse_castling(std::string castle_part); 
         void parse_en_passant(std::string ep_part); 
+        void parse_halfmove(std::string hm_part); 
+        void parse_fullmove(std::string fm_part);
 
 }; 

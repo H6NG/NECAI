@@ -1,15 +1,9 @@
 #include "board.h"
 #include <sstream> 
 
-Board::Board(){
+Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk(false), castle_bq(false), en_passant(-1){
 
-    squares.fill(EMPTY); 
-    white_turn = true; 
-    castle_wk = false;
-    castle_wq = false;
-    castle_bk = false;
-    castle_bq = false;
-    en_passant = -1;
+    squares.fill(EMPTY);
 
 }
 
@@ -34,7 +28,17 @@ Board::Board(){
  */
 void Board::load_fen(std::string fen){
 
+    std::istringstream ss(fen);
+    std::string section[8];
 
+    //ss is going to read one word until it hits a space
+    for(auto i = 0; i < 6; i++) ss >> section[i];
+    parse_pieces(section[0]);
+    parse_castling(section[1]); 
+    parse_turn(section[2]); 
+    parse_en_passant(section[3]); 
+    parse_halfmove(section[4]);
+    parse_fullmove(section[5]); 
 }
 bool Board::is_white_turn(){
 
@@ -50,5 +54,12 @@ void Board::parse_castling(std::string castle_part){
 
 }
 void Board::parse_en_passant(std::string ep_part){
+
+}
+void Board::parse_halfmove(std::string hm_part){
+
+}
+
+void Board::parse_fullmove(std::string fm_part){
 
 }
