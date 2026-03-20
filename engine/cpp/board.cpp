@@ -80,9 +80,9 @@ bool Board::is_white_turn(){
 
 }
 
-Piece Board::get_piece(int square) const{
+Piece Board::get_piece(int index) const{
 
-    return static_cast<Piece>(squares[square]);
+    return static_cast<Piece>(squares[index]);
     //static_cast converts a type to another at compile time
 
 }
@@ -217,8 +217,34 @@ void Board::checkRep(){ //always need the prefix to include member func of Board
 
 void Board::make_move(const Move& move){
 
+    history.push_back({en_passant, castle_wk, castle_wq, castle_bk, castle_bq, halfmove});
+    Piece piece = squares[move.from];
+    if (move.is_en_passant) {
+        int captured_pawn = move.to + (white_turn ? +8 : -8);
+        squares[captured_pawn] = EMPTY;
+    }
+    if (move.is_castling) {
+        if (move.to == 62) { squares[63] = EMPTY; squares[61] = WHITE_ROOK; } // white kingside
+        if (move.to == 58) { squares[56] = EMPTY; squares[59] = WHITE_ROOK; } // white queenside
+        if (move.to == 6)  { squares[7]  = EMPTY; squares[5]  = BLACK_ROOK; } // black kingside
+        if (move.to == 2)  { squares[0]  = EMPTY; squares[3]  = BLACK_ROOK; } // black queenside
+    }
+
 }
 
 void Board::unmake_move(const Move& move){
 
+}
+
+bool Board::get_castling_wk() const { //const means it's only reading, not writing
+    return castle_wk; 
+}
+bool Board::get_castling_wq() const {
+    return castle_wq; 
+}
+bool Board::get_castling_bk() const {
+    return castle_bk;  
+}
+bool Board::get_castling_bq() const {
+    return castle_bq;
 }
