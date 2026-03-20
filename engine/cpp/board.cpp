@@ -224,10 +224,10 @@ void Board::make_move(const Move& move){
         squares[captured_pawn] = EMPTY;
     }
     if (move.is_castling) {
-        if (move.to == 62) { squares[63] = EMPTY; squares[61] = WHITE_ROOK; } // white kingside
-        if (move.to == 58) { squares[56] = EMPTY; squares[59] = WHITE_ROOK; } // white queenside
-        if (move.to == 6)  { squares[7]  = EMPTY; squares[5]  = BLACK_ROOK; } // black kingside
-        if (move.to == 2)  { squares[0]  = EMPTY; squares[3]  = BLACK_ROOK; } // black queenside
+        if (move.to == 62) squares[63] = EMPTY; squares[61] = WHITE_ROOK;
+        if (move.to == 58) squares[56] = EMPTY; squares[59] = WHITE_ROOK; 
+        if (move.to == 6) squares[7] = EMPTY; squares[5] = BLACK_ROOK; 
+        if (move.to == 2) squares[0] = EMPTY; squares[3] = BLACK_ROOK; 
     }
 
 }
