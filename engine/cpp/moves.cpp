@@ -378,8 +378,24 @@ void MoveGenerator::generate_castling_moves(std::vector<Move>& moves){
                 moves.push_back(Move(60, 62, EMPTY, EMPTY, false, true));
             }
         }
+        if (board.get_castling_wq()) {
+            if (board.get_piece(57) == EMPTY && board.get_piece(58) == EMPTY && board.get_piece(59) == EMPTY) {
+                moves.push_back(Move(60, 58, EMPTY, EMPTY, false, true));
+            }
+        }
     }
     else{
 
+        if (board.get_castling_bk()) {
+            if (board.get_piece(5) == EMPTY && board.get_piece(6) == EMPTY) {
+                moves.push_back(Move(4, 6, EMPTY, EMPTY, false, true));
+            }
+        }
+        
+        if (board.get_castling_bq()) {
+            if (board.get_piece(1) == EMPTY && board.get_piece(2) == EMPTY && board.get_piece(3) == EMPTY) {
+                moves.push_back(Move(4, 2, EMPTY, EMPTY, false, true));
+            }
+        }
     }
 }
