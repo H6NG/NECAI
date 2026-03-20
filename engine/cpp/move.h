@@ -1,5 +1,5 @@
 #pragma once 
-#include "board.h"
+#include "pieces.h"
 
 struct Move{
 
