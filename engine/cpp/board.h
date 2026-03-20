@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <array>
-
+#include "move.h"
 
 enum Piece {
     EMPTY = 0,
@@ -20,6 +20,8 @@ class Board {
         bool is_white_turn(); 
         Piece get_piece(int square) const; 
         int get_en_passant() const; 
+        void make_move(const Move& move);
+        void unmake_move(const Move& move);
 
     private: 
 

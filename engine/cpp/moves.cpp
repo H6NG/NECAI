@@ -65,8 +65,9 @@ void MoveGenerator::generate_pawn_moves(std::vector<Move>& moves){
                 moves.push_back(Move(from, two_forward));
             }
         }
-        int capture_left  = i + direction - 1;
-        int capture_right = i + direction + 1;
+        int curr_file = i % 8;
+        int capture_left  = (curr_file > 0) ? i + direction - 1 : -1;
+        int capture_right = (curr_file < 7) ? i + direction + 1 : -1;
 
         for (int capture : {capture_left, capture_right}) {
             if (capture < 0 || capture >= 64) continue;
@@ -83,7 +84,7 @@ void MoveGenerator::generate_pawn_moves(std::vector<Move>& moves){
                     moves.push_back(Move(from, capture, target));
                 }
             }
-            if (capture == board.get_en_passant()) {
+            else if (capture == board.get_en_passant()) {
                 moves.push_back(Move(from, capture, is_white ? BLACK_PAWN : WHITE_PAWN, EMPTY, true));
             }
         }

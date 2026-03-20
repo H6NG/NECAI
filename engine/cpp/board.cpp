@@ -214,3 +214,11 @@ void Board::checkRep(){ //always need the prefix to include member func of Board
     }
 
 }
+
+void Board::make_move(const Move& move){
+
+}
+
+void Board::unmake_move(const Move& move){
+
+}
