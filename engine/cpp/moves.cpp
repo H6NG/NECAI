@@ -250,9 +250,7 @@ void MoveGenerator::generate_knight_moves(std::vector<Move>& moves){
                     if (is_enemy) {
                         moves.push_back(Move(from, potential_move, target));
                     }
-                    break;
                 }
-                potential_move += dir;
             }
         }
     }
