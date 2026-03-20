@@ -204,6 +204,58 @@ void MoveGenerator::generate_rook_moves(std::vector<Move>& moves){
 }
 void MoveGenerator::generate_knight_moves(std::vector<Move>& moves){
 
+        /**
+      * Chess:          Array index:
+      * Rank 8 ──→      0  1  2  3  4  5  6  7
+      * Rank 7 ──→      8  9  10 11 12 13 14 15
+      * Rank 6 ──→      16 17 18 19 20 21 22 23
+      * Rank 5 ──→      24 25 26 27 28 29 30 31
+      * Rank 4 ──→      32 33 34 35 36 37 38 39
+      * Rank 3 ──→      40 41 42 43 44 45 46 47
+      * Rank 2 ──→      48 49 50 51 52 53 54 55
+      * Rank 1 ──→      56 57 58 59 60 61 62 63
+      *                  a  b  c  d  e  f  g  h
+
+      * where white is rank 1 and 2 at the beginning
+      * black is rank 7-8 at the beginning
+      * 
+      * it is a combination of bishop and rook moves.
+      */
+     
+    bool is_white = board.is_white_turn(); 
+    Piece my_knight = is_white ? WHITE_KNIGHT : BLACK_KNIGHT; 
+    int direction[8] = {-17, -15, -10, -6, +17, +15, +10, +6};
+
+    for(auto i = 0; i < 64; i++){
+        if(board.get_piece(i) != my_knight) continue; 
+        int from = i; 
+
+        for(int dir : direction){
+
+            int potential_move = i + dir;
+            
+            if (potential_move >= 0 && potential_move < 64) {
+
+                int prev_file = (potential_move - dir) % 8;
+                int curr_file = potential_move % 8;
+                if (abs(curr_file - prev_file) != 1 && abs(curr_file - prev_file) != 2) continue;
+
+                Piece target = board.get_piece(potential_move);
+
+                if (target == EMPTY) {
+                    moves.push_back(Move(from, potential_move));
+
+                } else {
+                    bool is_enemy = is_white ? (target >= BLACK_PAWN) : (target < BLACK_PAWN && target != EMPTY);
+                    if (is_enemy) {
+                        moves.push_back(Move(from, potential_move, target));
+                    }
+                    break;
+                }
+                potential_move += dir;
+            }
+        }
+    }
 }
 void MoveGenerator::generate_queen_moves(std::vector<Move>& moves){
 
