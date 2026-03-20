@@ -20,4 +20,7 @@ class MoveGenerator {
         void generate_queen_moves(std::vector<Move>& moves); 
         void generate_king_moves(std::vector<Move>& moves); 
 
+        //forgot that castling is a possible move... 
+        void generate_castling_moves(std::vector<Move>& moves);
+
 }; 

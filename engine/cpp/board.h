@@ -10,14 +10,20 @@ class Board {
         Board(); //it's own constructor I've decided to do OOP 
         void load_fen(const std::string& fen); 
         bool is_white_turn(); 
-        Piece get_piece(int square) const; 
+        Piece get_piece(int index) const; 
         int get_en_passant() const; 
+        bool get_castling_wk() const; 
+        bool get_castling_wq() const; 
+        bool get_castling_bk() const; 
+        bool get_castling_bq() const; 
+
+        //pushes moves to vector<StateBoard> history from both players
         void make_move(const Move& move);
         void unmake_move(const Move& move);
 
     private: 
 
-        std::array<int,64> squares; //my int arr[][]
+        std::array<Piece,64> squares; //my int arr[]
         bool white_turn; 
         bool castle_wk; 
         bool castle_wq; 
@@ -35,5 +41,17 @@ class Board {
         void parse_halfmove(const std::string& hm_part); 
         void parse_fullmove(const std::string& fm_part);
         void checkRep(); 
+
+        struct BoardState {
+
+            int en_passant; 
+            bool castle_wk;
+            bool castle_wq; 
+            bool castle_bk; 
+            bool castle_bq;
+            int halfmove;
+
+        };
+        std::vector<BoardState> history; 
 
 }; 

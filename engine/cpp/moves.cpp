@@ -371,3 +371,15 @@ void MoveGenerator::generate_king_moves(std::vector<Move>& moves){
         }
     }
 }
+void MoveGenerator::generate_castling_moves(std::vector<Move>& moves){
+    if (board.is_white_turn()) {
+        if (board.get_castling_wk()) {
+            if (board.get_piece(61) == EMPTY && board.get_piece(62) == EMPTY) {
+                moves.push_back(Move(60, 62, EMPTY, EMPTY, false, true));
+            }
+        }
+    }
+    else{
+
+    }
+}
