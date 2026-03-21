@@ -224,16 +224,69 @@ void Board::make_move(const Move& move){
         squares[captured_pawn] = EMPTY;
     }
     if (move.is_castling) {
-        if (move.to == 62) squares[63] = EMPTY; squares[61] = WHITE_ROOK;
-        if (move.to == 58) squares[56] = EMPTY; squares[59] = WHITE_ROOK; 
-        if (move.to == 6) squares[7] = EMPTY; squares[5] = BLACK_ROOK; 
-        if (move.to == 2) squares[0] = EMPTY; squares[3] = BLACK_ROOK; 
+        if (move.to == 62) { squares[63] = EMPTY; squares[61] = WHITE_ROOK; }
+        if (move.to == 58) { squares[56] = EMPTY; squares[59] = WHITE_ROOK; }
+        if (move.to == 6) { squares[7] = EMPTY; squares[5] = BLACK_ROOK; }
+        if (move.to == 2) { squares[0] = EMPTY; squares[3] = BLACK_ROOK; }
     }
+    squares[move.to] = (move.promotion != EMPTY) ? move.promotion : piece;
+    squares[move.from] = EMPTY;
 
+    bool is_double_push = (piece == WHITE_PAWN || piece == BLACK_PAWN) && abs(move.to - move.from) == 16;
+    en_passant = is_double_push ? (move.from + move.to) / 2 : -1;
+
+    //we need to update castling rights
+    if (piece == WHITE_KING) { castle_wk = false; castle_wq = false; }
+    if (piece == BLACK_KING) { castle_bk = false; castle_bq = false; }
+    if (move.from == 63 || move.to == 63) castle_wk = false;
+    if (move.from == 56 || move.to == 56) castle_wq = false;
+    if (move.from == 7 || move.to == 7 ) castle_bk = false;
+    if (move.from == 0 || move.to == 0 ) castle_bq = false;
+
+    //update the halfmove clock
+    bool is_capture  = move.captured != EMPTY;
+    bool is_pawn_move = (piece == WHITE_PAWN || piece == BLACK_PAWN);
+    halfmove = (is_capture || is_pawn_move) ? 0 : halfmove + 1;
+
+    if (!white_turn) fullmove++;
+    //update the turn
+    white_turn = !white_turn;
 }
 
 void Board::unmake_move(const Move& move){
 
+    BoardState prev = history.back(); //.back() is a built-in func from std::vector that returns the last element
+    history.pop_back(); //removes last element
+
+    //set as prev
+    en_passant = prev.en_passant; 
+    castle_wk = prev.castle_wk;
+    castle_wq = prev.castle_wq;
+    castle_bk = prev.castle_bk;
+    castle_bq = prev.castle_bq;
+    halfmove = prev.halfmove;
+
+    white_turn = !white_turn;
+
+    Piece piece = squares[move.to];
+    if (move.promotion != EMPTY) piece = white_turn ? WHITE_PAWN : BLACK_PAWN;
+    squares[move.from] = piece;
+    // restore captured piece (EMPTY if none)
+    squares[move.to] = move.captured;  
+    //we undo the en_passant
+    if (move.is_en_passant) {
+        squares[move.to] = EMPTY;
+        int captured_pawn = move.to + (white_turn ? +8 : -8);
+        squares[captured_pawn] = white_turn ? BLACK_PAWN : WHITE_PAWN;
+    }
+    //undo the castling
+    if (move.is_castling) {
+        if (move.to == 62) { squares[61] = EMPTY; squares[63] = WHITE_ROOK; }
+        if (move.to == 58) { squares[59] = EMPTY; squares[56] = WHITE_ROOK; }
+        if (move.to == 6) { squares[5] = EMPTY; squares[7] = BLACK_ROOK; }
+        if (move.to == 2) { squares[3] = EMPTY; squares[0] = BLACK_ROOK; }
+    }
+    if (!white_turn) fullmove--;
 }
 
 bool Board::get_castling_wk() const { //const means it's only reading, not writing
