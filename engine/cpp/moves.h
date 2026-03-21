@@ -25,5 +25,6 @@ class MoveGenerator {
 
         //Generates only legal moves if king is in check
         void generate_legal_moves(std::vector<Move>& moves);
+        std::vector<Move> legal_moves;
 
 }; 

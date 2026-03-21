@@ -303,4 +303,77 @@ bool Board::get_castling_bq() const {
 
 bool Board::is_in_check(bool is_white) const{
 
+    Piece my_king = is_white ? WHITE_KING : BLACK_KING; 
+    Piece enemy_rook = is_white ? BLACK_ROOK : WHITE_ROOK;
+    Piece enemy_queen = is_white ? BLACK_QUEEN : WHITE_QUEEN;
+    Piece enemy_bishop = is_white ? BLACK_BISHOP : WHITE_BISHOP;
+    Piece enemy_knight = is_white ? BLACK_KNIGHT : WHITE_KNIGHT;
+    Piece enemy_pawn = is_white ? BLACK_PAWN : WHITE_PAWN;
+    Piece enemy_king = is_white ? BLACK_KING : WHITE_KING;
+
+    int king_square = -1;
+
+    for (int i = 0; i < 64; i++) {
+        if (squares[i] == my_king) {
+            king_square = i;
+            break;
+        }
+    }
+
+    //check various attack from enemy 
+    for (int dir : {1, -1, 8, -8}) {
+        int sq = king_square + dir;
+        while (sq >= 0 && sq < 64) {
+            if (dir == 1 || dir == -1) {
+                if (abs(sq % 8 - (sq - dir) % 8) != 1) break;
+            }
+            Piece p = squares[sq];
+            if (p == enemy_rook || p == enemy_queen) return true;
+            if (p != EMPTY) break;
+            sq += dir;
+        }
+    }
+
+    for (int dir : {7, -7, 9, -9}) {
+        int sq = king_square + dir;
+        while (sq >= 0 && sq < 64) {
+            if (abs(sq % 8 - (sq - dir) % 8) != 1) break;
+            Piece p = squares[sq];
+            if (p == enemy_bishop || p == enemy_queen) return true;
+            if (p != EMPTY) break;
+            sq += dir;
+        }
+    }
+
+    for (int dir : {-17, -15, -10, -6, 17, 15, 10, 6}) {
+        int sq = king_square + dir;
+        if (sq >= 0 && sq < 64) {
+            if (abs(sq % 8 - king_square % 8) == 1 || abs(sq % 8 - king_square % 8) == 2) {
+                if (squares[sq] == enemy_knight) return true;
+            }
+        }
+    }
+
+    int pawn_dir = is_white ? -8 : 8;
+    for (int dir : {pawn_dir - 1, pawn_dir + 1}) {
+        int sq = king_square + dir;
+        if (sq >= 0 && sq < 64) {
+            if (abs(sq % 8 - king_square % 8) == 1) {
+                if (squares[sq] == enemy_pawn) return true;
+            }
+        }
+    }
+
+    for (int dir : {1, -1, 8, -8, 7, -7, 9, -9}) {
+        int sq = king_square + dir;
+        if (sq >= 0 && sq < 64) {
+            if (dir != 8 && dir != -8) {
+                if (abs(sq % 8 - king_square % 8) != 1) continue;
+            }
+            if (squares[sq] == enemy_king) return true;
+        }
+    }
+
+    return false;
+
 }
