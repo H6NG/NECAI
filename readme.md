@@ -51,3 +51,13 @@ NECAI/
 ## Credit 
 
 [Lichess Database](https://database.lichess.org/)
+
+# C++ Engine + Pytorch Model = Best Move Possible
+
+| C++ Engine                         | PyTorch Model                  |
+|----------------------------------|--------------------------------|
+| Deterministic                    | Probabilistic                  |
+| Calculates every legal move      | Learned patterns from games    |
+| Minimax + alpha-beta pruning     | Neural network inference       |
+| Evaluates material + position    | Evaluates like a human would   |
+| Fast, precise                    | Strategic, intuitive           |
