@@ -11,7 +11,7 @@ from datasets import Dataset, Features, Value
 from huggingface_hub import hf_hub_download, login
 
 # ── Config ──────────────────────────────────────────────
-LICHESS_TOKEN = "lip_fV1dgDdkCsD9GHBEHOG0"  # paste your token here
+LICHESS_TOKEN = "lip_xxxxxxxxxxxxxxxx"  # paste your token here 
 HF_REPO = "h4ng/necai"
 MAX_WORKERS = 10  # 10 parallel requests at once
 # ────────────────────────────────────────────────────────
