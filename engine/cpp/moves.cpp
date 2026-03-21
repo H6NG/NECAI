@@ -397,12 +397,12 @@ void MoveGenerator::generate_castling_moves(std::vector<Move>& moves){
 void MoveGenerator::generate_legal_moves(std::vector<Move>& moves){
     std::vector<Move> pseudo_legal;
     
+    generate_pawn_moves(pseudo_legal);
     generate_rook_moves(pseudo_legal);
     generate_bishop_moves(pseudo_legal);
     generate_queen_moves(pseudo_legal);
     generate_king_moves(pseudo_legal);
     generate_knight_moves(pseudo_legal);
-    generate_pawn_moves(pseudo_legal);
     generate_castling_moves(pseudo_legal);
 
     for (auto& move : pseudo_legal) {
