@@ -23,4 +23,7 @@ class MoveGenerator {
         //forgot that castling is a possible move... 
         void generate_castling_moves(std::vector<Move>& moves);
 
+        //Generates only legal moves if king is in check
+        void generate_legal_moves(std::vector<Move>& moves);
+
 }; 

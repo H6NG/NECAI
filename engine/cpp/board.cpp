@@ -217,7 +217,7 @@ void Board::checkRep(){ //always need the prefix to include member func of Board
 
 void Board::make_move(const Move& move){
 
-    history.push_back({en_passant, castle_wk, castle_wq, castle_bk, castle_bq, halfmove});
+    history[history_size++] = {en_passant, castle_wk, castle_wq, castle_bk, castle_bq, halfmove};
     Piece piece = squares[move.from];
     if (move.is_en_passant) {
         int captured_pawn = move.to + (white_turn ? +8 : -8);
@@ -255,8 +255,7 @@ void Board::make_move(const Move& move){
 
 void Board::unmake_move(const Move& move){
 
-    BoardState prev = history.back(); //.back() is a built-in func from std::vector that returns the last element
-    history.pop_back(); //removes last element
+    BoardState prev = history[--history_size]; //removes last element
 
     //set as prev
     en_passant = prev.en_passant; 
@@ -300,4 +299,8 @@ bool Board::get_castling_bk() const {
 }
 bool Board::get_castling_bq() const {
     return castle_bq;
+}
+
+bool Board::is_in_check(bool is_white) const{
+
 }

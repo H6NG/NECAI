@@ -20,6 +20,7 @@ class Board {
         //pushes moves to vector<StateBoard> history from both players
         void make_move(const Move& move);
         void unmake_move(const Move& move);
+        bool is_in_check(bool is_white) const; // is it white or black king in check
 
     private: 
 
@@ -52,6 +53,9 @@ class Board {
             int halfmove;
 
         };
-        std::vector<BoardState> history; 
+        //std::vector<BoardState> history; 
+        // change it for a better space complexity O(1) instead of O(n) from std::vector
+        std::array<BoardState, 1024> history; //1024 slots just to be safe.
+        int history_size = 0;
 
 }; 
