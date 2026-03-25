@@ -11,7 +11,6 @@ model = NECAIEvaluator().to(device)
 
 checkpoint = torch.load("../model/necai_eval.pt", map_location=device)
 
-# supports both old-style and new-style checkpoints
 if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
     model.load_state_dict(checkpoint["model_state_dict"])
 else:
@@ -34,8 +33,8 @@ def evaluate(fen):
 print("Starting position:        ", evaluate("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"))
 print("After 1. e4:              ", evaluate("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"))
 print("White up a queen:         ", evaluate("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"))
-print("Black up a queen:         ", evaluate("rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNB1KBNR w KQkq - 0 1"))
-print("White up a rook:          ", evaluate("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBN1 w KQkq - 0 1"))
+print("Black up a queen:         ", evaluate("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1"))
+print("White up a rook:          ", evaluate("rnbqkbn1/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1"))
 print("Scholar's mate:           ", evaluate("r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4"))
 
 board = chess.Board()

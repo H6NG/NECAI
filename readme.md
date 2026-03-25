@@ -52,7 +52,7 @@ NECAI/
 
 [Lichess Database](https://database.lichess.org/)
 
-# C++ Engine + Pytorch Model = Best Move Possible
+## C++ Engine + Pytorch Model = Best Move Possible
 
 | C++ Engine                         | PyTorch Model                  |
 |----------------------------------|--------------------------------|
