@@ -43,19 +43,34 @@ def get_pgn_from_fen(fen: str) -> str:
        caller must pass pgn_so_far alongside FEN."""
     return ""
 
+import subprocess
+import json
+from pathlib import Path
 
-def engine_move(fen: str) -> str:
+ENGINE_PATH = Path(__file__).resolve().parent.parent / "engine" / "cpp" / "necai_engine"
+
+def engine_move(fen: str, depth: int = 3):
     """
-    Placeholder — will call C++ engine + PyTorch model later.
-    Returns a UCI move string e.g. 'e2e4'
+    Calls the C++ engine executable and returns parsed JSON.
     """
-    board = chess.Board(fen)
-    # TODO: replace with actual C++ engine + ML call
-    legal_moves = list(board.legal_moves)
-    if not legal_moves:
+    try:
+        result = subprocess.run(
+            [str(ENGINE_PATH), fen, str(depth)],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        data = json.loads(result.stdout.strip())
+        return data
+
+    except subprocess.CalledProcessError as e:
+        print("Engine subprocess failed:")
+        print(e.stderr)
         return None
-    return str(legal_moves[0])  # placeholder: first legal move
-
+    except json.JSONDecodeError:
+        print("Engine returned invalid JSON")
+        return None
 
 def uci_to_san(fen: str, uci_move: str) -> str:
     """Convert UCI move (e2e4) to SAN (e4) for readability."""
@@ -70,11 +85,24 @@ def get_move():
     data = request.get_json()
 
     fen = data.get("fen", STARTING_FEN)
-    pgn_so_far = data.get("pgn_so_far", "") # e.g. "1. e4 e5 2. Nf3"
-    necai_color = data.get("color", "white") # "white" or "black"
+    pgn_so_far = data.get("pgn_so_far", "")
+    necai_color = data.get("color", "white")  # "white" or "black"
 
     board = chess.Board(fen)
 
+    # Check if it's actually the bot's turn
+    is_white_turn = board.turn
+    bot_is_white = (necai_color == "white")
+
+    if is_white_turn != bot_is_white:
+        return jsonify({
+            "move": None,
+            "fen": fen,
+            "game_over": False,
+            "message": "Not bot's turn"
+        })
+
+    # Check if game is already over
     if not list(board.legal_moves):
         return jsonify({
             "move": None,
@@ -86,17 +114,17 @@ def get_move():
 
     chosen_move_uci = None
     source = None
+    engine_data = None
 
     # Case 1: Starting position + NECAI is white
     if fen == STARTING_FEN and necai_color == "white":
         chosen_move_uci = "e2e4"
         source = "hardcoded"
 
-    # Case 2: Check opening book
+    # Case 2: Opening book
     if chosen_move_uci is None:
         book_move = get_book_move(pgn_so_far)
         if book_move:
-            # Convert SAN to UCI
             try:
                 move = board.parse_san(book_move)
                 chosen_move_uci = move.uci()
@@ -104,25 +132,40 @@ def get_move():
             except Exception:
                 chosen_move_uci = None
 
-    # Case 3: Fallback to engine + machine learning
+    # Case 3: Engine fallback
     if chosen_move_uci is None:
-        chosen_move_uci = engine_move(fen)
+        engine_data = engine_move(fen, depth=3)
+
+        if engine_data is None:
+            return jsonify({"error": "Engine call failed"}), 500
+
+        if engine_data.get("game_over"):
+            return jsonify({
+                "move": None,
+                "fen": fen,
+                "in_check": board.is_check(),
+                "game_over": True,
+                "reason": engine_data.get("reason", "unknown")
+            })
+
+        chosen_move_uci = engine_data["best_move"]
         source = "engine"
 
-    # Apply the move
+    # Apply chosen move
     move = chess.Move.from_uci(chosen_move_uci)
-    san  = board.san(move)
+    san = board.san(move)
     board.push(move)
 
-    updated_fen    = board.fen()
+    updated_fen = board.fen()
     opponent_check = board.is_check()
 
     return jsonify({
-        "move": san,             
-        "move_uci": chosen_move_uci, 
-        "fen": updated_fen,      
-        "in_check": opponent_check,  
+        "move": san,
+        "move_uci": chosen_move_uci,
+        "fen": updated_fen,
+        "in_check": opponent_check,
         "source": source,
+        "engine_eval": engine_data.get("engine_eval") if engine_data else None,
         "game_over": False
     })
 
@@ -140,6 +183,33 @@ def debug_book():
         "sample_pgns": df["pgn"].head(5).tolist(),  # show what DB actually looks like
         "sample_matches": matches["pgn"].head(3).tolist() if not matches.empty else []
     })
+
+@app.route("/get_legal_move", methods=["POST"])
+def get_legal_move(fen : str): 
+    #this func returns all possible moves given a fen
+    pass
+
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    data = request.get_json()
+    fen = data.get("fen", STARTING_FEN)
+    depth = data.get("depth", 3)
+
+    board = chess.Board(fen)
+
+    if not list(board.legal_moves):
+        return jsonify({
+            "best_move": None,
+            "game_over": True,
+            "reason": "checkmate" if board.is_checkmate() else "stalemate"
+        })
+
+    engine_data = engine_move(fen, depth=depth)
+
+    if engine_data is None:
+        return jsonify({"error": "Engine call failed"}), 500
+
+    return jsonify(engine_data)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
