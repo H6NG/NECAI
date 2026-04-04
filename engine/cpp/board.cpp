@@ -5,7 +5,7 @@
 //Time complexity of O(128) =~ O(1)
 //Space Complexity of O(n) because of istringstream ss(fen) so I change to by passing reference for O(1) 
 
-Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk(false), castle_bq(false), en_passant(-1){
+Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk(false), castle_bq(false), en_passant(-1), halfmove(0), fullmove(1){
 
     squares.fill(EMPTY);
 
