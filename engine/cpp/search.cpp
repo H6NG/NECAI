@@ -11,20 +11,36 @@
 
 Search::Search(Board& board) : board(board), generator(board), eval(board) {}
 
+
 Move Search::best_move(int depth) {
     std::vector<Move> moves = generator.generate_moves();
+
+    if (moves.empty()) {
+        throw std::runtime_error("No legal moves");
+    }
+
+    if (moves.size() == 1) {
+        return moves[0];
+    }
+
     Move best = moves[0];
     int best_score = std::numeric_limits<int>::min();
 
-    for (auto& move : moves) {
+    for (const auto& move : moves) {
         board.make_move(move);
-        int score = -negamax(depth - 1, std::numeric_limits<int>::min() + 1, std::numeric_limits<int>::max());
+        int score = -negamax(
+            depth - 1,
+            std::numeric_limits<int>::min() + 1,
+            std::numeric_limits<int>::max()
+        );
         board.unmake_move(move);
+
         if (score > best_score) {
             best_score = score;
             best = move;
         }
     }
+
     return best;
 }
 
