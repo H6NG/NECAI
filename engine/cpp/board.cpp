@@ -319,6 +319,10 @@ bool Board::is_in_check(bool is_white) const{
             break;
         }
     }
+    
+    if (king_square == -1) {
+        return false;
+    }
 
     //check various attack from enemy 
     for (int dir : {1, -1, 8, -8}) {

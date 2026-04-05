@@ -9,7 +9,7 @@
 #include "eval.h"
 #include "move.h"
 
-int main(int argc, char* argv[]) {
+int main1(int argc, char* argv[]) {
     if (argc < 3) {
         std::cerr << "Usage: ./necai_engine \"<fen>\" <depth>\n";
         return 1;
