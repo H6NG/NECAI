@@ -45,10 +45,10 @@ void MoveGenerator::generate_pawn_moves(std::vector<Move>& moves){
         
         if (to >= 0 && to < 64 && board.get_piece(to) == EMPTY) {
             if (to < 8 || to > 55) {
-                moves.push_back(Move(from, to, EMPTY, is_white ? WHITE_QUEEN : BLACK_QUEEN));
-                moves.push_back(Move(from, to, EMPTY, is_white ? WHITE_ROOK : BLACK_ROOK));
-                moves.push_back(Move(from, to, EMPTY, is_white ? WHITE_BISHOP : BLACK_BISHOP));
-                moves.push_back(Move(from, to, EMPTY, is_white ? WHITE_KNIGHT : BLACK_KNIGHT));
+                moves.push_back(Move(from, to, is_white ? WHITE_QUEEN : BLACK_QUEEN));
+                moves.push_back(Move(from, to, is_white ? WHITE_ROOK : BLACK_ROOK));
+                moves.push_back(Move(from, to, is_white ? WHITE_BISHOP : BLACK_BISHOP));
+                moves.push_back(Move(from, to, is_white ? WHITE_KNIGHT : BLACK_KNIGHT));
             } else {
                 moves.push_back(Move(from, to));
             }
@@ -70,16 +70,16 @@ void MoveGenerator::generate_pawn_moves(std::vector<Move>& moves){
 
             if (target != EMPTY && is_white != (target < BLACK_PAWN)) {
                 if (capture < 8 || capture > 55) {
-                    moves.push_back(Move(from, capture, target, is_white ? WHITE_QUEEN : BLACK_QUEEN));
-                    moves.push_back(Move(from, capture, target, is_white ? WHITE_ROOK : BLACK_ROOK));
-                    moves.push_back(Move(from, capture, target, is_white ? WHITE_BISHOP : BLACK_BISHOP));
-                    moves.push_back(Move(from, capture, target, is_white ? WHITE_KNIGHT : BLACK_KNIGHT));
+                    moves.push_back(Move(from, capture, is_white ? WHITE_QUEEN : BLACK_QUEEN, target));
+                    moves.push_back(Move(from, capture, is_white ? WHITE_ROOK : BLACK_ROOK, target));
+                    moves.push_back(Move(from, capture, is_white ? WHITE_BISHOP : BLACK_BISHOP, target));
+                    moves.push_back(Move(from, capture, is_white ? WHITE_KNIGHT : BLACK_KNIGHT, target));
                 } else {
-                    moves.push_back(Move(from, capture, target));
+                    moves.push_back(Move(from, capture, EMPTY, target));
                 }
             }
             else if (capture == board.get_en_passant()) {
-                moves.push_back(Move(from, capture, is_white ? BLACK_PAWN : WHITE_PAWN, EMPTY, true));
+                moves.push_back(Move(from, capture, EMPTY, is_white ? BLACK_PAWN : WHITE_PAWN, true));
             }
         }
     }
@@ -131,7 +131,7 @@ void MoveGenerator::generate_bishop_moves(std::vector<Move>& moves){
                 } else {
                     bool is_enemy = is_white ? (target >= BLACK_PAWN) : (target < BLACK_PAWN && target != EMPTY);
                     if (is_enemy) {
-                        moves.push_back(Move(from, sq, target));
+                        moves.push_back(Move(from, sq, EMPTY, target));
                     }
                     break;
                 }
@@ -188,7 +188,7 @@ void MoveGenerator::generate_rook_moves(std::vector<Move>& moves){
                 } else {
                     bool is_enemy = is_white ? (target >= BLACK_PAWN) : (target < BLACK_PAWN && target != EMPTY);
                     if (is_enemy) {
-                        moves.push_back(Move(from, potential_move, target));
+                        moves.push_back(Move(from, potential_move, EMPTY, target));
                     }
                     break;
                 }
@@ -243,7 +243,7 @@ void MoveGenerator::generate_knight_moves(std::vector<Move>& moves){
                 } else {
                     bool is_enemy = is_white ? (target >= BLACK_PAWN) : (target < BLACK_PAWN && target != EMPTY);
                     if (is_enemy) {
-                        moves.push_back(Move(from, potential_move, target));
+                        moves.push_back(Move(from, potential_move, EMPTY, target));
                     }
                 }
             }
@@ -299,7 +299,7 @@ void MoveGenerator::generate_queen_moves(std::vector<Move>& moves){
                 } else {
                     bool is_enemy = is_white ? (target >= BLACK_PAWN) : (target < BLACK_PAWN && target != EMPTY);
                     if (is_enemy) {
-                        moves.push_back(Move(from, potential_move, target));
+                        moves.push_back(Move(from, potential_move, EMPTY, target));
                     }
                     break;
                 }
@@ -357,7 +357,7 @@ void MoveGenerator::generate_king_moves(std::vector<Move>& moves){
                 } else {
                     bool is_enemy = is_white ? (target >= BLACK_PAWN) : (target < BLACK_PAWN && target != EMPTY);
                     if (is_enemy) {
-                        moves.push_back(Move(from, potential_move, target));
+                        moves.push_back(Move(from, potential_move, EMPTY, target));
                     }
                 }
                 potential_move += dir;

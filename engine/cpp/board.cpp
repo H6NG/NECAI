@@ -36,6 +36,7 @@ Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk
 void Board::load_fen(const std::string& fen){
 
     // Exceptions 
+    squares.fill(EMPTY);
 
     if(fen.empty()) throw std::invalid_argument("String FEN cannot be empty");
 
