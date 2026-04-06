@@ -1,5 +1,7 @@
 // Legal Move Checker for testing purposes
 
+//g++ -std=c++17 -O2 -I../engine/cpp -o lmc lmc.cpp ../engine/cpp/board.cpp ../engine/cpp/moves.cpp ../engine/cpp/move.cpp
+ 
 #include <iostream>
 #include <string>
 

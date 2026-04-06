@@ -366,14 +366,33 @@ void MoveGenerator::generate_king_moves(std::vector<Move>& moves){
     }
 }
 void MoveGenerator::generate_castling_moves(std::vector<Move>& moves){
-    if (board.is_white_turn()) {
+    bool is_white = board.is_white_turn();
+
+    // Castling is illegal if the king starts in check.
+    if (board.is_in_check(is_white)) {
+        return;
+    }
+
+    auto king_step_is_safe = [&](int from, int to) {
+        board.make_move(Move(from, to));
+        bool safe = !board.is_in_check(!board.is_white_turn());
+        board.unmake_move(Move(from, to));
+        return safe;
+    };
+
+    if (is_white) {
         if (board.get_castling_wk()) {
-            if (board.get_piece(61) == EMPTY && board.get_piece(62) == EMPTY) {
+            if (board.get_piece(61) == EMPTY &&
+                board.get_piece(62) == EMPTY &&
+                king_step_is_safe(60, 61)) {
                 moves.push_back(Move(60, 62, EMPTY, EMPTY, false, true));
             }
         }
         if (board.get_castling_wq()) {
-            if (board.get_piece(57) == EMPTY && board.get_piece(58) == EMPTY && board.get_piece(59) == EMPTY) {
+            if (board.get_piece(57) == EMPTY &&
+                board.get_piece(58) == EMPTY &&
+                board.get_piece(59) == EMPTY &&
+                king_step_is_safe(60, 59)) {
                 moves.push_back(Move(60, 58, EMPTY, EMPTY, false, true));
             }
         }
@@ -381,13 +400,18 @@ void MoveGenerator::generate_castling_moves(std::vector<Move>& moves){
     else{
 
         if (board.get_castling_bk()) {
-            if (board.get_piece(5) == EMPTY && board.get_piece(6) == EMPTY) {
+            if (board.get_piece(5) == EMPTY &&
+                board.get_piece(6) == EMPTY &&
+                king_step_is_safe(4, 5)) {
                 moves.push_back(Move(4, 6, EMPTY, EMPTY, false, true));
             }
         }
         
         if (board.get_castling_bq()) {
-            if (board.get_piece(1) == EMPTY && board.get_piece(2) == EMPTY && board.get_piece(3) == EMPTY) {
+            if (board.get_piece(1) == EMPTY &&
+                board.get_piece(2) == EMPTY &&
+                board.get_piece(3) == EMPTY &&
+                king_step_is_safe(4, 3)) {
                 moves.push_back(Move(4, 2, EMPTY, EMPTY, false, true));
             }
         }

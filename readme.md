@@ -51,6 +51,8 @@ NECAI/
 ## Credit 
 
 [Lichess Database](https://database.lichess.org/)
+[Stockfish Org](https://stockfishchess.org/)
+[ChatGPT](https://chatgpt.com/)
 
 ## C++ Engine + Pytorch Model = Best Move Possible
 
