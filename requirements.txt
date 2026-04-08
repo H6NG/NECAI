@@ -29,7 +29,7 @@ packaging==26.0
 pandas==3.0.1
 propcache==0.4.1
 pyarrow==23.0.1
-Pygments==2.19.2
+Pygments==2.20.0
 python-chess==1.999
 python-dateutil==2.9.0.post0
 PyYAML==6.0.3
