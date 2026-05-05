@@ -9,7 +9,7 @@ class Board {
 
         Board(); //it's own constructor I've decided to do OOP 
         void load_fen(const std::string& fen); 
-        bool is_white_turn(); 
+        bool is_white_turn() const;
         Piece get_piece(int index) const; 
         int get_en_passant() const; 
         bool get_castling_wk() const; 
@@ -20,7 +20,8 @@ class Board {
         //pushes moves to vector<StateBoard> history from both players
         void make_move(const Move& move);
         void unmake_move(const Move& move);
-        bool is_in_check(bool is_white) const; // is it white or black king in check
+        bool is_in_check(bool is_white) const;
+        void flip_turn();
 
     private: 
 

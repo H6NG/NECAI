@@ -17,5 +17,6 @@ class Search {
         Eval eval;
 
         int negamax(int depth, int alpha, int beta);
+        int quiescence(int alpha, int beta);
         
 };

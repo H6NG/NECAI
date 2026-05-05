@@ -26,6 +26,7 @@ class Eval {
         int evaluate_pawn_structure();
         int evaluate_king_safety();
         int evaluate_mobility();
+        bool is_endgame() const;
 
         // piece square tables
         static const int PAWN_TABLE[64];

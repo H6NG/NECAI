@@ -103,8 +103,22 @@ int Eval::evaluate_material() {
     return score;
 }
 
+// Endgame when both sides have no queens, or queen + at most one minor/rook.
+bool Eval::is_endgame() const {
+    int queens = 0, minors_rooks = 0;
+    for (int i = 0; i < 64; i++) {
+        Piece p = board.get_piece(i);
+        if (p == WHITE_QUEEN || p == BLACK_QUEEN) queens++;
+        if (p == WHITE_ROOK || p == BLACK_ROOK ||
+            p == WHITE_BISHOP || p == BLACK_BISHOP ||
+            p == WHITE_KNIGHT || p == BLACK_KNIGHT) minors_rooks++;
+    }
+    return queens == 0 || (queens <= 2 && minors_rooks <= 2);
+}
+
 int Eval::evaluate_piece_square_tables() {
     int score = 0;
+    bool endgame = is_endgame();
     for (int i = 0; i < 64; i++) {
         Piece p = board.get_piece(i);
         int mirror = (7 - i / 8) * 8 + (i % 8);
@@ -114,13 +128,13 @@ int Eval::evaluate_piece_square_tables() {
             case WHITE_BISHOP: score += BISHOP_TABLE[i]; break;
             case WHITE_ROOK: score += ROOK_TABLE[i]; break;
             case WHITE_QUEEN: score += QUEEN_TABLE[i]; break;
-            case WHITE_KING: score += KING_MIDDLE_TABLE[i]; break;
+            case WHITE_KING: score += endgame ? KING_END_TABLE[i] : KING_MIDDLE_TABLE[i]; break;
             case BLACK_PAWN: score -= PAWN_TABLE[mirror]; break;
             case BLACK_KNIGHT: score -= KNIGHT_TABLE[mirror]; break;
             case BLACK_BISHOP: score -= BISHOP_TABLE[mirror]; break;
             case BLACK_ROOK: score -= ROOK_TABLE[mirror]; break;
             case BLACK_QUEEN: score -= QUEEN_TABLE[mirror]; break;
-            case BLACK_KING: score -= KING_MIDDLE_TABLE[mirror]; break;
+            case BLACK_KING: score -= endgame ? KING_END_TABLE[mirror] : KING_MIDDLE_TABLE[mirror]; break;
             default: break;
         }
     }
@@ -163,19 +177,37 @@ int Eval::evaluate_king_safety() {
         if (board.get_piece(i) == BLACK_KING) black_king = i;
     }
 
+    // Check pawns directly in front and diagonally in front of the king.
+    // Guard against file-wrapping: diagonal squares must be on an adjacent file.
     for (int dir : {-7, -8, -9}) {
         int sq = white_king + dir;
-        if (sq >= 0 && sq < 64 && board.get_piece(sq) == WHITE_PAWN) score += 10;
+        if (sq >= 0 && sq < 64) {
+            if (dir == -8 || abs(sq % 8 - white_king % 8) == 1) {
+                if (board.get_piece(sq) == WHITE_PAWN) score += 10;
+            }
+        }
     }
     for (int dir : {7, 8, 9}) {
         int sq = black_king + dir;
-        if (sq >= 0 && sq < 64 && board.get_piece(sq) == BLACK_PAWN) score -= 10;
+        if (sq >= 0 && sq < 64) {
+            if (dir == 8 || abs(sq % 8 - black_king % 8) == 1) {
+                if (board.get_piece(sq) == BLACK_PAWN) score -= 10;
+            }
+        }
     }
     return score;
 }
 
 int Eval::evaluate_mobility() {
-    std::vector<Move> moves;
-    generator.generate_legal_moves(moves);
-    return (int)moves.size() * 5;
+    std::vector<Move> my_moves;
+    generator.generate_legal_moves(my_moves);
+
+    // temporarily flip turn to count opponent moves
+    board.flip_turn();
+    MoveGenerator opp_gen(board);
+    std::vector<Move> opp_moves;
+    opp_gen.generate_legal_moves(opp_moves);
+    board.flip_turn();
+
+    return ((int)my_moves.size() - (int)opp_moves.size()) * 5;
 }

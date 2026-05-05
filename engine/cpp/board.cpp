@@ -5,7 +5,7 @@
 //Time complexity of O(128) =~ O(1)
 //Space Complexity of O(n) because of istringstream ss(fen) so I change to by passing reference for O(1) 
 
-Board::Board() : white_turn(true), castle_wq(false), castle_wk(false), castle_bk(false), castle_bq(false), en_passant(-1), halfmove(0), fullmove(1){
+Board::Board() : white_turn(true), castle_wk(false), castle_wq(false), castle_bk(false), castle_bq(false), en_passant(-1), halfmove(0), fullmove(1){
 
     squares.fill(EMPTY);
 
@@ -75,9 +75,9 @@ void Board::load_fen(const std::string& fen){
     parse_fullmove(section[5]); 
     checkRep(); 
 }
-bool Board::is_white_turn(){
+bool Board::is_white_turn() const {
 
-    return white_turn; 
+    return white_turn;
 
 }
 
@@ -287,6 +287,10 @@ void Board::unmake_move(const Move& move){
         if (move.to == 2) { squares[3] = EMPTY; squares[0] = BLACK_ROOK; }
     }
     if (!white_turn) fullmove--;
+}
+
+void Board::flip_turn() {
+    white_turn = !white_turn;
 }
 
 bool Board::get_castling_wk() const { //const means it's only reading, not writing
