@@ -1,6 +1,5 @@
 import argparse
 import json
-import random
 import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,15 +14,15 @@ from datasets import Dataset, Features, Value
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 NECAI_ENGINE_PATH = PROJECT_ROOT / "necai_engine"
 STOCKFISH_PATH = PROJECT_ROOT / "playandlearn" / "stockfish"
-OUTPUT_DIR = PROJECT_ROOT / "necai" / "memoization"
+OUTPUT_DIR = PROJECT_ROOT / "database" / "memoization"
 DEFAULT_REPO_ID = "h4ng/necai"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate memoization rows by starting from random legal FENs, "
-            "then letting NECAI play against Stockfish."
+            "Generate memoization datasets by playing NECAI against Stockfish "
+            "in many concurrent games."
         )
     )
     parser.add_argument(
@@ -67,27 +66,9 @@ def parse_args() -> argparse.Namespace:
         help="Safety cap on total half-moves per game.",
     )
     parser.add_argument(
-        "--min-random-plies",
-        type=int,
-        default=6,
-        help="Minimum random plies used to create a legal starting FEN.",
-    )
-    parser.add_argument(
-        "--max-random-plies",
-        type=int,
-        default=24,
-        help="Maximum random plies used to create a legal starting FEN.",
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=42,
-        help="Random seed used when creating starting FENs.",
-    )
-    parser.add_argument(
         "--output-dir",
         default=str(OUTPUT_DIR),
-        help="Directory where white/black memoization files will be written.",
+        help="Directory where local exports will be written.",
     )
     parser.add_argument(
         "--repo-id",
@@ -154,59 +135,13 @@ def summarize_result(board: chess.Board, max_plies_hit: bool) -> tuple[str, str]
     else:
         result = "1/2-1/2"
 
-    return result, outcome.termination.name.lower()
-
-
-def legal_start_ply_choices(color: str, min_random_plies: int, max_random_plies: int) -> list[int]:
-    expected_parity = 0 if color == "white" else 1
-    choices = [
-        ply
-        for ply in range(min_random_plies, max_random_plies + 1)
-        if ply % 2 == expected_parity
-    ]
-    if not choices:
-        raise ValueError(
-            f"No ply counts in range [{min_random_plies}, {max_random_plies}] match color={color}"
-        )
-    return choices
-
-
-def generate_random_legal_fen(
-    color: str,
-    rng: random.Random,
-    min_random_plies: int,
-    max_random_plies: int,
-    max_attempts: int = 200,
-) -> str:
-    target_choices = legal_start_ply_choices(color, min_random_plies, max_random_plies)
-    expected_turn = chess.WHITE if color == "white" else chess.BLACK
-
-    for _ in range(max_attempts):
-        board = chess.Board()
-        target_plies = rng.choice(target_choices)
-
-        while board.ply() < target_plies and not board.is_game_over(claim_draw=True):
-            legal_moves = list(board.legal_moves)
-            if not legal_moves:
-                break
-            board.push(rng.choice(legal_moves))
-
-        if board.turn != expected_turn:
-            continue
-        if board.is_game_over(claim_draw=True):
-            continue
-        if not board.is_valid():
-            continue
-
-        return board.fen()
-
-    raise RuntimeError(f"Could not generate a random legal FEN for color={color}")
+    termination = outcome.termination.name.lower()
+    return result, termination
 
 
 def play_single_game(
     color: str,
     game_index: int,
-    start_fen: str,
     stockfish_path: Path,
     necai_engine_path: Path,
     necai_depth: int,
@@ -214,10 +149,10 @@ def play_single_game(
     max_plies: int,
     print_lock: threading.Lock,
 ) -> list[dict]:
-    board = chess.Board(start_fen)
+    board = chess.Board()
     rows: list[dict] = []
     max_plies_hit = False
-    game_id = f"{color}-random-{game_index + 1:04d}"
+    game_id = f"{color}-{game_index + 1:04d}"
     bot_is_white = color == "white"
 
     with chess.engine.SimpleEngine.popen_uci(str(stockfish_path)) as stockfish:
@@ -274,8 +209,8 @@ def play_single_game(
 
     with print_lock:
         print(
-            f"[{game_id}] start_fen={start_fen[:30]}... rows={len(rows)} "
-            f"result={result} termination={termination}"
+            f"[{game_id}] rows={len(rows)} result={result} "
+            f"termination={termination} final_ply={board.ply()}"
         )
 
     return rows
@@ -284,19 +219,14 @@ def play_single_game(
 def export_rows(rows: list[dict], output_dir: Path, color: str) -> Path:
     color_dir = output_dir / color
     color_dir.mkdir(parents=True, exist_ok=True)
+    df = pd.DataFrame(rows)
 
-    new_df = pd.DataFrame(rows)
-    parquet_path = color_dir / "train-00000-of-00001.parquet"
     jsonl_path = color_dir / "train.jsonl"
+    parquet_path = color_dir / "train-00000-of-00001.parquet"
 
-    if parquet_path.exists():
-        existing_df = pd.read_parquet(parquet_path)
-        combined_df = pd.concat([existing_df, new_df], ignore_index=True)
-    else:
-        combined_df = new_df
+    df.to_json(jsonl_path, orient="records", lines=True)
+    df.to_parquet(parquet_path, index=False)
 
-    combined_df.to_json(jsonl_path, orient="records", lines=True)
-    combined_df.to_parquet(parquet_path, index=False)
     return parquet_path
 
 
@@ -320,24 +250,15 @@ def main() -> None:
     print_lock = threading.Lock()
     tasks = []
     all_rows = {"white": [], "black": []}
-    master_rng = random.Random(args.seed)
 
     with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
         for color in ("white", "black"):
             for game_index in range(args.games_per_color):
-                start_seed = master_rng.randint(0, 10**9)
-                start_fen = generate_random_legal_fen(
-                    color=color,
-                    rng=random.Random(start_seed),
-                    min_random_plies=args.min_random_plies,
-                    max_random_plies=args.max_random_plies,
-                )
                 tasks.append(
                     executor.submit(
                         play_single_game,
                         color,
                         game_index,
-                        start_fen,
                         stockfish_path,
                         necai_engine_path,
                         args.necai_depth,
@@ -349,8 +270,10 @@ def main() -> None:
 
         for future in as_completed(tasks):
             rows = future.result()
-            if rows:
-                all_rows[rows[0]["color"]].extend(rows)
+            if not rows:
+                continue
+            color = rows[0]["color"]
+            all_rows[color].extend(rows)
 
     subset_map = {
         "white": "memoization_white",
@@ -364,7 +287,7 @@ def main() -> None:
             continue
 
         parquet_path = export_rows(rows, output_dir, color)
-        print(f"Saved {len(rows)} new rows into {parquet_path}")
+        print(f"Saved {len(rows)} rows to {parquet_path}")
 
         if args.push_to_hub:
             print(f"Pushing {subset_name} to {args.repo_id}")

@@ -12,7 +12,7 @@ import chess.pgn
 import io
 import pandas as pd
 from huggingface_hub import hf_hub_download
-from model.inference import predict_fen
+from evaluator.model.inference import predict_fen
 from flask_cors import CORS
 
 app = Flask(__name__); 

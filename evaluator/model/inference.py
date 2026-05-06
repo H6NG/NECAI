@@ -3,7 +3,7 @@ from typing import Optional
 
 import torch
 
-from model.model import NECAIEvaluator, board_to_tensor_and_scalars
+from evaluator.model.model import NECAIEvaluator, board_to_tensor_and_scalars
 
 
 MODEL_FILE = Path(__file__).resolve().parent / "necai_eval.pt"

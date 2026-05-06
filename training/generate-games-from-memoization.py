@@ -1,5 +1,6 @@
 import argparse
 import json
+import random
 import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,15 +15,15 @@ from datasets import Dataset, Features, Value
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 NECAI_ENGINE_PATH = PROJECT_ROOT / "necai_engine"
 STOCKFISH_PATH = PROJECT_ROOT / "playandlearn" / "stockfish"
-OUTPUT_DIR = PROJECT_ROOT / "necai" / "memoization"
+MEMOIZATION_DIR = PROJECT_ROOT / "database" / "memoization"
 DEFAULT_REPO_ID = "h4ng/necai"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate memoization datasets by playing NECAI against Stockfish "
-            "in many concurrent games."
+            "Generate memoization rows by starting games from random FENs "
+            "sampled from the local memoization subsets."
         )
     )
     parser.add_argument(
@@ -34,6 +35,16 @@ def parse_args() -> argparse.Namespace:
         "--necai-engine-path",
         default=str(NECAI_ENGINE_PATH),
         help="Path to the compiled NECAI engine binary.",
+    )
+    parser.add_argument(
+        "--source-dir",
+        default=str(MEMOIZATION_DIR),
+        help="Directory containing memoization/white and memoization/black parquet files.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=str(MEMOIZATION_DIR),
+        help="Directory where generated white/black memoization files will be written.",
     )
     parser.add_argument(
         "--games-per-color",
@@ -66,9 +77,10 @@ def parse_args() -> argparse.Namespace:
         help="Safety cap on total half-moves per game.",
     )
     parser.add_argument(
-        "--output-dir",
-        default=str(OUTPUT_DIR),
-        help="Directory where local exports will be written.",
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed used when sampling starting FENs.",
     )
     parser.add_argument(
         "--repo-id",
@@ -135,13 +147,38 @@ def summarize_result(board: chess.Board, max_plies_hit: bool) -> tuple[str, str]
     else:
         result = "1/2-1/2"
 
-    termination = outcome.termination.name.lower()
-    return result, termination
+    return result, outcome.termination.name.lower()
+
+
+def load_fen_pool(source_dir: Path, color: str) -> list[str]:
+    parquet_path = source_dir / color / "train-00000-of-00001.parquet"
+    if not parquet_path.exists():
+        raise FileNotFoundError(f"Memoization subset not found: {parquet_path}")
+
+    df = pd.read_parquet(parquet_path)
+    if "fen" not in df.columns:
+        raise ValueError(f"Expected 'fen' column in {parquet_path}, found {list(df.columns)}")
+
+    fens = []
+    for fen in df["fen"].dropna().tolist():
+        try:
+            board = chess.Board(fen)
+        except ValueError:
+            continue
+        expected_turn = chess.WHITE if color == "white" else chess.BLACK
+        if board.turn == expected_turn and not board.is_game_over(claim_draw=True):
+            fens.append(fen)
+
+    if not fens:
+        raise ValueError(f"No usable {color} FENs found in {parquet_path}")
+
+    return fens
 
 
 def play_single_game(
     color: str,
     game_index: int,
+    start_fen: str,
     stockfish_path: Path,
     necai_engine_path: Path,
     necai_depth: int,
@@ -149,10 +186,10 @@ def play_single_game(
     max_plies: int,
     print_lock: threading.Lock,
 ) -> list[dict]:
-    board = chess.Board()
+    board = chess.Board(start_fen)
     rows: list[dict] = []
     max_plies_hit = False
-    game_id = f"{color}-{game_index + 1:04d}"
+    game_id = f"{color}-memo-{game_index + 1:04d}"
     bot_is_white = color == "white"
 
     with chess.engine.SimpleEngine.popen_uci(str(stockfish_path)) as stockfish:
@@ -209,8 +246,8 @@ def play_single_game(
 
     with print_lock:
         print(
-            f"[{game_id}] rows={len(rows)} result={result} "
-            f"termination={termination} final_ply={board.ply()}"
+            f"[{game_id}] start_fen={start_fen[:30]}... rows={len(rows)} "
+            f"result={result} termination={termination}"
         )
 
     return rows
@@ -226,7 +263,6 @@ def export_rows(rows: list[dict], output_dir: Path, color: str) -> Path:
 
     df.to_json(jsonl_path, orient="records", lines=True)
     df.to_parquet(parquet_path, index=False)
-
     return parquet_path
 
 
@@ -240,12 +276,19 @@ def main() -> None:
 
     stockfish_path = Path(args.stockfish_path).expanduser().resolve()
     necai_engine_path = Path(args.necai_engine_path).expanduser().resolve()
+    source_dir = Path(args.source_dir).expanduser().resolve()
     output_dir = Path(args.output_dir).expanduser().resolve()
 
     if not stockfish_path.exists():
         raise FileNotFoundError(f"Stockfish binary not found: {stockfish_path}")
     if not necai_engine_path.exists():
         raise FileNotFoundError(f"NECAI engine binary not found: {necai_engine_path}")
+
+    random.seed(args.seed)
+    fen_pools = {
+        "white": load_fen_pool(source_dir, "white"),
+        "black": load_fen_pool(source_dir, "black"),
+    }
 
     print_lock = threading.Lock()
     tasks = []
@@ -254,11 +297,13 @@ def main() -> None:
     with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
         for color in ("white", "black"):
             for game_index in range(args.games_per_color):
+                start_fen = random.choice(fen_pools[color])
                 tasks.append(
                     executor.submit(
                         play_single_game,
                         color,
                         game_index,
+                        start_fen,
                         stockfish_path,
                         necai_engine_path,
                         args.necai_depth,
@@ -270,10 +315,8 @@ def main() -> None:
 
         for future in as_completed(tasks):
             rows = future.result()
-            if not rows:
-                continue
-            color = rows[0]["color"]
-            all_rows[color].extend(rows)
+            if rows:
+                all_rows[rows[0]["color"]].extend(rows)
 
     subset_map = {
         "white": "memoization_white",
