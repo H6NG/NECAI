@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -O2 -Wall -Wextra
-IFLAGS = -I documentation -I engine -I evaluator
+IFLAGS = -I documentation -I engine -I evaluator/classical_eval
 
 TARGET = necai_engine
 
@@ -8,7 +8,7 @@ SRCS = main.cpp \
        documentation/board.cpp \
        documentation/moves.cpp \
        documentation/move.cpp \
-       evaluator/eval.cpp \
+       evaluator/classical_eval/eval.cpp \
        engine/search.cpp
 
 OBJS = $(SRCS:.cpp=.o)

@@ -1,6 +1,6 @@
 #pragma once
-#include "../documentation/board.h"
-#include "../documentation/moves.h"
+#include "../../documentation/board.h"
+#include "../../documentation/moves.h"
 
 class Eval {
 

@@ -6,7 +6,7 @@
 #include "documentation/board.h"
 #include "documentation/moves.h"
 #include "engine/search.h"
-#include "evaluator/eval.h"
+#include "evaluator/classical_eval/eval.h"
 #include "documentation/move.h"
 
 int main(int argc, char* argv[]) {
