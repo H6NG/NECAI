@@ -12,7 +12,7 @@ from datasets import Dataset, Features, Value
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-NECAI_ENGINE_PATH = PROJECT_ROOT / "engine" / "cpp" / "necai_engine"
+NECAI_ENGINE_PATH = PROJECT_ROOT / "necai_engine"
 STOCKFISH_PATH = PROJECT_ROOT / "playandlearn" / "stockfish"
 OUTPUT_DIR = PROJECT_ROOT / "necai" / "memoization"
 DEFAULT_REPO_ID = "h4ng/necai"

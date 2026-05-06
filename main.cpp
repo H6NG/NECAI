@@ -3,11 +3,11 @@
 #include <vector>
 #include <cstdlib>
 
-#include "board.h"
-#include "moves.h"
-#include "search.h"
-#include "eval.h"
-#include "move.h"
+#include "documentation/board.h"
+#include "documentation/moves.h"
+#include "engine/search.h"
+#include "evaluator/eval.h"
+#include "documentation/move.h"
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {

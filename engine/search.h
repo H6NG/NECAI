@@ -1,7 +1,7 @@
 #pragma once
-#include "board.h"
-#include "moves.h"
-#include "eval.h"
+#include "../documentation/board.h"
+#include "../documentation/moves.h"
+#include "../evaluator/eval.h"
 
 class Search {
 

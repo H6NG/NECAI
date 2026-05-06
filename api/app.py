@@ -57,7 +57,7 @@ import subprocess
 import json
 from pathlib import Path
 
-ENGINE_PATH = Path(__file__).resolve().parent.parent / "engine" / "cpp" / "necai_engine"
+ENGINE_PATH = Path(__file__).resolve().parent.parent / "necai_engine"
 
 def engine_move(fen: str, depth: int = 2):
     try:
