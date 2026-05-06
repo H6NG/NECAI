@@ -179,18 +179,18 @@ int Eval::evaluate_king_safety() {
 
     // Check pawns directly in front and diagonally in front of the king.
     // Guard against file-wrapping: diagonal squares must be on an adjacent file.
-    for (int dir : {-7, -8, -9}) {
+    for (int dir : {7, 8, 9}) {
         int sq = white_king + dir;
         if (sq >= 0 && sq < 64) {
-            if (dir == -8 || abs(sq % 8 - white_king % 8) == 1) {
+            if (dir == 8 || abs(sq % 8 - white_king % 8) == 1) {
                 if (board.get_piece(sq) == WHITE_PAWN) score += 10;
             }
         }
     }
-    for (int dir : {7, 8, 9}) {
+    for (int dir : {-7, -8, -9}) {
         int sq = black_king + dir;
         if (sq >= 0 && sq < 64) {
-            if (dir == 8 || abs(sq % 8 - black_king % 8) == 1) {
+            if (dir == -8 || abs(sq % 8 - black_king % 8) == 1) {
                 if (board.get_piece(sq) == BLACK_PAWN) score -= 10;
             }
         }

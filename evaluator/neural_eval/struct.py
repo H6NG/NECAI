@@ -16,21 +16,6 @@ PIECE_VALUES = {
 
 
 def board_to_tensor_and_scalars(fen: str) -> Tuple[torch.Tensor, torch.Tensor]:
-    """
-    Returns:
-        board_tensor: [18, 8, 8]
-        scalar_tensor: [8]
-
-    Channels:
-      0-5   white P N B R Q K
-      6-11  black P N B R Q K
-      12    side to move
-      13    white kingside castling
-      14    white queenside castling
-      15    black kingside castling
-      16    black queenside castling
-      17    en passant square
-    """
     board = chess.Board(fen)
     tensor = np.zeros((18, 8, 8), dtype=np.float32)
 
@@ -81,7 +66,6 @@ def board_to_tensor_and_scalars(fen: str) -> Tuple[torch.Tensor, torch.Tensor]:
             black_material += val
 
     material_diff = (white_material - black_material) / 4000.0
-
     stm_mobility = board.legal_moves.count() / 100.0
 
     opp_board = board.copy()
@@ -108,60 +92,68 @@ def board_to_tensor_and_scalars(fen: str) -> Tuple[torch.Tensor, torch.Tensor]:
     return torch.tensor(tensor), torch.tensor(scalar_features)
 
 
+class ResBlock(nn.Module):
+    def __init__(self, channels: int):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(channels),
+        )
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        return self.relu(x + self.block(x))
+
+
 class NECAIEvaluator(nn.Module):
     def __init__(self, scalar_dim: int = 8):
         super().__init__()
 
-        self.conv = nn.Sequential(
-            nn.Conv2d(18, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+        # Input projection: 18 → 128 channels, keep 8×8
+        self.input_conv = nn.Sequential(
+            nn.Conv2d(18, 128, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(128),
-            nn.ReLU(),
-
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-
-            nn.MaxPool2d(2),
-
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-
-            nn.MaxPool2d(2),
+            nn.ReLU(inplace=True),
         )
 
+        # 6 residual blocks, all at 128 channels, 8×8 spatial resolution
+        self.res_blocks = nn.Sequential(
+            ResBlock(128),
+            ResBlock(128),
+            ResBlock(128),
+            ResBlock(128),
+            ResBlock(128),
+            ResBlock(128),
+        )
+
+        # Flatten 128×8×8 = 8192 → 512
         self.board_head = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(256 * 2 * 2, 512),
-            nn.ReLU(),
+            nn.Linear(128 * 8 * 8, 512),
+            nn.ReLU(inplace=True),
             nn.Dropout(0.3),
         )
 
         self.scalar_head = nn.Sequential(
             nn.Linear(scalar_dim, 64),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Dropout(0.1),
         )
 
         self.final = nn.Sequential(
             nn.Linear(512 + 64, 256),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Dropout(0.25),
             nn.Linear(256, 64),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(64, 1),
         )
 
     def forward(self, board_x, scalar_x):
-        board_feat = self.board_head(self.conv(board_x))
+        board_feat = self.board_head(self.res_blocks(self.input_conv(board_x)))
         scalar_feat = self.scalar_head(scalar_x)
         combined = torch.cat([board_feat, scalar_feat], dim=1)
         return self.final(combined)
