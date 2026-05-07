@@ -79,6 +79,32 @@ Move Search::best_move(int depth) {
     return best;
 }
 
+// Returns up to K moves sorted by classical score, best first.
+std::vector<ScoredMove> Search::top_k_moves(int depth, int k) {
+    std::vector<Move> moves = generator.generate_moves();
+    std::vector<ScoredMove> scored;
+    scored.reserve(moves.size());
+
+    order_moves(moves);
+
+    for (const auto& move : moves) {
+        board.make_move(move);
+        int score = -negamax(
+            depth - 1,
+            std::numeric_limits<int>::min() + 1,
+            std::numeric_limits<int>::max()
+        );
+        board.unmake_move(move);
+        scored.push_back({move, score});
+    }
+
+    std::sort(scored.begin(), scored.end(),
+              [](const ScoredMove& a, const ScoredMove& b) { return a.score > b.score; });
+
+    if ((int)scored.size() > k) scored.erase(scored.begin() + k, scored.end());
+    return scored;
+}
+
 int Search::negamax(int depth, int alpha, int beta) {
     if (depth == 0) return quiescence(alpha, beta);
 

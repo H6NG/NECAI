@@ -5,8 +5,28 @@ import torch
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from tqdm import tqdm
-from evaluator.neural_eval.inference import load_model, get_device
+from pathlib import Path
 from evaluator.neural_eval.struct import board_to_tensor_and_scalars
+
+JIT_FILE = Path(__file__).resolve().parent / "necai_eval_jit.pt"
+
+
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
+def load_jit_model(device):
+    if not JIT_FILE.exists():
+        raise FileNotFoundError(
+            f"{JIT_FILE} not found. Run `python -m evaluator.neural_eval.export_jit` first."
+        )
+    model = torch.jit.load(str(JIT_FILE), map_location=device)
+    model.eval()
+    return model
 
 PIECE_VALUES = {
     chess.PAWN: 1, chess.KNIGHT: 3.2, chess.BISHOP: 3.3,
@@ -15,7 +35,7 @@ PIECE_VALUES = {
 
 NUM_POSITIONS = 100_000
 CHUNK_SIZE = 5000
-BATCH_SIZE = 4096
+BATCH_SIZE = 8192
 NUM_PROC = 8
 SEED = 42
 
@@ -117,10 +137,11 @@ def fen_to_tensors(fen):
 
 
 def main():
-    print("Loading model...")
-    model = load_model()
+    print("Loading JIT FP16 model...")
     device = get_device()
-    model.eval()
+    model = load_jit_model(device)
+    use_half = device.type in ("cuda", "mps")
+    dtype = torch.float16 if use_half else torch.float32
 
     print(f"Generating {NUM_POSITIONS:,} positions...")
     n_chunks = (NUM_POSITIONS + CHUNK_SIZE - 1) // CHUNK_SIZE
@@ -140,17 +161,25 @@ def main():
     materials = np.array(materials_all, dtype=np.float32)
     cats = np.array(cats_all)
 
+    import time
     print("Inferring...")
     scores = np.empty(n, dtype=np.float32)
+    t0 = time.perf_counter()
     with Pool(NUM_PROC) as pool:
         for start in tqdm(range(0, n, BATCH_SIZE), desc="Inference"):
             end = min(start + BATCH_SIZE, n)
             tensors = pool.map(fen_to_tensors, fens_all[start:end])
-            board_tensors = torch.stack([t[0] for t in tensors]).to(device)
-            scalar_tensors = torch.stack([t[1] for t in tensors]).to(device)
+            board_tensors = torch.stack([t[0] for t in tensors]).to(device, dtype=dtype, non_blocking=True)
+            scalar_tensors = torch.stack([t[1] for t in tensors]).to(device, dtype=dtype, non_blocking=True)
             with torch.no_grad():
-                preds = model(board_tensors, scalar_tensors).cpu().numpy().flatten()
+                preds = model(board_tensors, scalar_tensors).float().cpu().numpy().flatten()
             scores[start:end] = preds
+    elapsed = time.perf_counter() - t0
+    print(f"Inference: {elapsed:.2f}s for {n:,} positions = {n/elapsed:,.0f} evals/sec")
+
+    # FP16 can produce inf/nan in rare cases; clip to valid range
+    scores = np.nan_to_num(scores, nan=0.0, posinf=1.0, neginf=-1.0)
+    scores = np.clip(scores, -1.0, 1.0)
 
     correct = (
         ((scores > 0.05) & (materials > 0.5)) |

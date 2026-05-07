@@ -7,8 +7,9 @@ class Board {
 
     public: 
 
-        Board(); //it's own constructor I've decided to do OOP 
-        void load_fen(const std::string& fen); 
+        Board(); //it's own constructor I've decided to do OOP
+        void load_fen(const std::string& fen);
+        std::string to_fen() const;
         bool is_white_turn() const;
         Piece get_piece(int index) const; 
         int get_en_passant() const; 

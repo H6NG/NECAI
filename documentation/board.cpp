@@ -81,6 +81,46 @@ bool Board::is_white_turn() const {
 
 }
 
+std::string Board::to_fen() const {
+    static const char piece_chars[] = ".PNBRQKpnbrqk";
+    std::string fen;
+    fen.reserve(80);
+
+    for (int rank = 0; rank < 8; rank++) {
+        int empty_run = 0;
+        for (int file = 0; file < 8; file++) {
+            Piece p = squares[rank * 8 + file];
+            if (p == EMPTY) {
+                empty_run++;
+            } else {
+                if (empty_run > 0) { fen += char('0' + empty_run); empty_run = 0; }
+                fen += piece_chars[p];
+            }
+        }
+        if (empty_run > 0) fen += char('0' + empty_run);
+        if (rank < 7) fen += '/';
+    }
+
+    fen += white_turn ? " w " : " b ";
+
+    std::string castle;
+    if (castle_wk) castle += 'K';
+    if (castle_wq) castle += 'Q';
+    if (castle_bk) castle += 'k';
+    if (castle_bq) castle += 'q';
+    fen += castle.empty() ? "-" : castle;
+
+    fen += ' ';
+    if (en_passant < 0) fen += '-';
+    else {
+        fen += char('a' + (en_passant % 8));
+        fen += char('0' + (8 - en_passant / 8));
+    }
+
+    fen += ' ' + std::to_string(halfmove) + ' ' + std::to_string(fullmove);
+    return fen;
+}
+
 Piece Board::get_piece(int index) const{
 
     return static_cast<Piece>(squares[index]);
