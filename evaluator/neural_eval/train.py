@@ -1,8 +1,10 @@
 import os
 import random
 import pickle
+import sys
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import chess
 import numpy as np
@@ -23,11 +25,11 @@ HERE = Path(__file__).resolve().parent
 VAL_CACHE_FILE = HERE / "val_cache.pkl"
 MODEL_FILE = HERE / "necai_eval.pt"
 
-TOTAL_POSITIONS = 100_000_000
+TOTAL_POSITIONS = 50_000_000
 VAL_CACHE_SIZE = 100_000
 SYNTHETIC_POSITIONS = 30_000
 
-BATCH_SIZE = 256
+BATCH_SIZE = 2048
 NUM_EPOCHS = 30
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
@@ -175,47 +177,91 @@ class ValDataset(Dataset):
         return process_row(self.data[idx])
 
 
+def _process_item_mp(item: Dict):
+    try:
+        board_tensor, scalar_tensor = board_to_tensor_and_scalars(item["fen"])
+        target = row_to_target(item)
+        return board_tensor.numpy(), scalar_tensor.numpy(), float(target)
+    except Exception:
+        return None
+
+
 class StreamingTrainDataset(IterableDataset):
-    def __init__(self, total: int, skip: int, synthetic: List[Dict]):
+    def __init__(self, total: int, skip: int, synthetic: List[Dict], num_proc: int = 8):
         self.total = total
-        self.skip = skip          # skip the first N rows reserved for validation
+        self.skip = skip
         self.synthetic = synthetic
+        self.num_proc = num_proc
+        self.chunk_size = num_proc * 8
 
     def __iter__(self):
-        worker_info = torch.utils.data.get_worker_info()
         stream = open_hf_stream()
-
-        # Each worker handles its own shard of the stream
-        if worker_info is not None:
-            stream = stream.shard(
-                num_shards=worker_info.num_workers,
-                index=worker_info.id,
-            )
-
         count = 0
         skipped = 0
+        chunk = []
 
-        for item in stream:
-            # Skip positions reserved for the val cache
-            if skipped < self.skip:
-                skipped += 1
-                continue
+        with Pool(processes=self.num_proc) as pool:
+            for item in stream:
+                if skipped < self.skip:
+                    skipped += 1
+                    continue
+                if count >= self.total:
+                    break
 
-            if count >= self.total:
-                break
+                chunk.append(item)
 
-            try:
-                yield process_row(item)
-                count += 1
-            except Exception:
-                continue
+                if len(chunk) >= self.chunk_size:
+                    for result in pool.map(_process_item_mp, chunk):
+                        if result is not None and count < self.total:
+                            board_np, scalar_np, target = result
+                            yield (
+                                torch.from_numpy(board_np),
+                                torch.from_numpy(scalar_np),
+                                torch.tensor([target], dtype=torch.float32),
+                            )
+                            count += 1
+                    chunk = []
 
-        # Sprinkle synthetic positions throughout
+            if chunk:
+                for result in pool.map(_process_item_mp, chunk):
+                    if result is not None and count < self.total:
+                        board_np, scalar_np, target = result
+                        yield (
+                            torch.from_numpy(board_np),
+                            torch.from_numpy(scalar_np),
+                            torch.tensor([target], dtype=torch.float32),
+                        )
+                        count += 1
+
         for item in self.synthetic:
             try:
                 yield process_row(item)
             except Exception:
                 continue
+
+
+BOARD_FILE = HERE / "data_board.npy"
+SCALAR_FILE = HERE / "data_scalar.npy"
+TARGET_FILE = HERE / "data_target.npy"
+COUNT_FILE = HERE / "data_count.txt"
+
+
+class DiskDataset(Dataset):
+    def __init__(self):
+        count = int(COUNT_FILE.read_text().strip())
+        self.board = np.lib.format.open_memmap(BOARD_FILE, mode="r", dtype=np.uint8)
+        self.scalar = np.lib.format.open_memmap(SCALAR_FILE, mode="r", dtype=np.float32)
+        self.target = np.lib.format.open_memmap(TARGET_FILE, mode="r", dtype=np.float32)
+        self.count = min(count, len(self.target))
+
+    def __len__(self):
+        return self.count
+
+    def __getitem__(self, idx):
+        board = torch.from_numpy(self.board[idx].astype(np.float32).copy())
+        scalar = torch.from_numpy(self.scalar[idx].copy())
+        target = torch.tensor([self.target[idx]], dtype=torch.float32)
+        return board, scalar, target
 
 
 @torch.no_grad()
@@ -240,7 +286,7 @@ def evaluate(model, loader, loss_fn, device):
     return total_loss / total_count, total_mae / total_count
 
 
-def train():
+def train(from_disk: bool = False):
     set_seed(SEED)
 
     device = get_device()
@@ -250,25 +296,31 @@ def train():
     val_data = build_val_cache()
     val_dataset = ValDataset(val_data)
 
-    print("Generating synthetic positions...")
-    synthetic = generate_synthetic_positions(SYNTHETIC_POSITIONS)
-    print(f"Synthetic positions: {len(synthetic):,}")
+    if from_disk:
+        print("Loading training data from disk...")
+        train_dataset = DiskDataset()
+        print(f"Disk dataset: {len(train_dataset):,} positions")
+        num_workers = 8
+    else:
+        print("Generating synthetic positions...")
+        synthetic = generate_synthetic_positions(SYNTHETIC_POSITIONS)
+        print(f"Synthetic positions: {len(synthetic):,}")
+        train_dataset = StreamingTrainDataset(
+            total=TOTAL_POSITIONS,
+            skip=VAL_CACHE_SIZE,
+            synthetic=synthetic,
+        )
+        num_workers = 0
 
-    train_dataset = StreamingTrainDataset(
-        total=TOTAL_POSITIONS,
-        skip=VAL_CACHE_SIZE,
-        synthetic=synthetic,
-    )
-
-    cpu_count = os.cpu_count() or 4
-    num_workers = cpu_count if not use_cuda else 4
-    effective_batch = BATCH_SIZE * max(1, num_gpus if use_cuda else 1)
+    num_gpus = torch.cuda.device_count() if use_cuda else 0
+    effective_batch = BATCH_SIZE * max(1, num_gpus)
 
     train_loader = DataLoader(
         train_dataset,
         batch_size=effective_batch,
         num_workers=num_workers,
         pin_memory=use_cuda,
+        shuffle=from_disk,
     )
 
     val_loader = DataLoader(
@@ -277,12 +329,9 @@ def train():
         shuffle=False,
         num_workers=num_workers,
         pin_memory=use_cuda,
-        persistent_workers=True,
     )
 
     model = NECAIEvaluator().to(device)
-
-    num_gpus = torch.cuda.device_count()
     if num_gpus > 1:
         print(f"Using {num_gpus} GPUs with DataParallel")
         model = nn.DataParallel(model)
@@ -405,4 +454,5 @@ def upload_model():
 
 
 if __name__ == "__main__":
-    train()
+    from_disk = "--from-disk" in sys.argv
+    train(from_disk=from_disk)
