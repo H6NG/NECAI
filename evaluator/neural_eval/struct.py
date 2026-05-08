@@ -150,6 +150,7 @@ class NECAIEvaluator(nn.Module):
             nn.Linear(256, 64),
             nn.ReLU(inplace=True),
             nn.Linear(64, 1),
+            nn.Tanh(),
         )
 
     def forward(self, board_x, scalar_x):

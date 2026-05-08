@@ -45,6 +45,9 @@ int main(int argc, char* argv[]) {
 
     Eval eval(board);
     int current_eval = eval.evaluate();
+    // evaluate() returns score from side-to-move's perspective; flip to
+    // White's perspective so the UI can interpret it consistently.
+    if (!board.is_white_turn()) current_eval = -current_eval;
 
     std::cout << "{";
     std::cout << "\"best_move\": \"" << move_to_uci(best) << "\", ";

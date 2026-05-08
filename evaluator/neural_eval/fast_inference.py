@@ -74,9 +74,6 @@ def predict_batch(fens: List[str]) -> List[float]:
 
     preds = model(board_x, scalar_x).float().cpu().numpy().flatten()
     preds = np.nan_to_num(preds, nan=0.0, posinf=1.0, neginf=-1.0)
-    # Model output is unbounded; squash through tanh to get [-1, 1] while
-    # preserving relative ordering (avoids saturation from hard clipping).
-    preds = np.tanh(preds)
     return preds.tolist()
 
 

@@ -24,15 +24,20 @@ static void order_moves(std::vector<Move>& moves) {
 
 // Quiescence search: keep searching captures at the leaf to avoid the horizon effect.
 int Search::quiescence(int alpha, int beta) {
+    std::vector<Move> moves = generator.generate_moves();
+
+    if (moves.empty()) {
+        if (board.is_in_check(board.is_white_turn())) return -99999;
+        return 0;
+    }
+
     int stand_pat = eval.evaluate();
 
     if (stand_pat >= beta) return beta;
     if (stand_pat > alpha) alpha = stand_pat;
 
-    std::vector<Move> moves = generator.generate_moves();
-
     for (auto& move : moves) {
-        if (move.captured == EMPTY) continue; // only captures
+        if (move.captured == EMPTY) continue;
 
         board.make_move(move);
         int score = -quiescence(-beta, -alpha);

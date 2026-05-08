@@ -351,17 +351,16 @@ def train(from_disk: bool = False):
         checkpoint = torch.load(MODEL_FILE, map_location=device, weights_only=True)
 
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
-            model.load_state_dict(checkpoint["model_state_dict"])
-            if "optimizer_state_dict" in checkpoint:
-                optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+            # Don't restore optimizer — LR was likely near zero after ReduceLROnPlateau.
+            # Fresh optimizer lets the calibration fix take effect quickly.
             if "epoch" in checkpoint:
                 start_epoch = checkpoint["epoch"] + 1
-            if "best_val_loss" in checkpoint:
-                best_val_loss = checkpoint["best_val_loss"]
+            best_val_loss = float("inf")  # re-evaluate from scratch with new output layer
         else:
-            model.load_state_dict(checkpoint)
+            model.load_state_dict(checkpoint, strict=False)
 
-        print(f"Resuming from epoch {start_epoch}")
+        print(f"Resuming from epoch {start_epoch} with fresh optimizer (LR={LEARNING_RATE})")
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=2,

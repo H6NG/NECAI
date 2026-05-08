@@ -40,6 +40,19 @@ const evalToBar = (cp) => {
   return 1 / (1 + Math.exp(-c / 400))
 }
 
+function moveToPieceAndText(san, color) {
+  if (!san) return { piece: null, text: "" }
+  // Castling — no piece icon
+  if (san.startsWith("O-O")) return { piece: null, text: san }
+  const first = san[0]
+  const pieceLetters = { N: "N", B: "B", R: "R", Q: "Q", K: "K" }
+  if (pieceLetters[first]) {
+    return { piece: color + first, text: san.slice(1) }
+  }
+  // Pawn move
+  return { piece: color + "P", text: san }
+}
+
 const formatCp = (cp) => {
   if (cp == null) return "0.00"
   if (Math.abs(cp) >= 9000) return cp > 0 ? "M" : "−M"
@@ -113,7 +126,7 @@ export default function App() {
 
     setChess(next)
     setBoard(getBoardFromFen(next))
-    setMoveHistory(next.history())
+    setMoveHistory((prev) => [...prev, move.san])
     setLastBotMove(data.move || data.move_uci)
     setLastMoveSquares({ from: data.move_uci.slice(0, 2), to: data.move_uci.slice(2, 4) })
     setLastSource(data.source ?? null)
@@ -153,7 +166,7 @@ export default function App() {
 
     setChess(next)
     setBoard(getBoardFromFen(next))
-    setMoveHistory(next.history())
+    setMoveHistory((prev) => [...prev, move.san])
     setLastMoveSquares({ from, to })
 
     if (next.isCheckmate()) { setStatus("Checkmate"); return }
@@ -183,7 +196,7 @@ export default function App() {
     movePairs.push({ num: i / 2 + 1, w: moveHistory[i], b: moveHistory[i + 1] })
 
   const evalValue = evalToBar(engineEval)
-  const whiteHeight = (isFlipped ? 1 - evalValue : evalValue) * 100
+  const whiteHeight = evalValue * 100
   const boardSizePx = SQUARE_PX * 8
 
   return (
@@ -226,12 +239,12 @@ export default function App() {
 
       {/* MAIN BOARD AREA */}
       <main className="flex-1 flex flex-col items-center justify-center px-6">
-        {/* Top player card */}
+        {/* Top player card — always the opponent (NECAI) */}
         <PlayerCard
-          name={isFlipped ? "You" : "NECAI"}
-          subtitle={isFlipped ? "Human" : "Bot · classical search"}
+          name="NECAI"
+          subtitle="Bot · classical search"
           captured={captured[isFlipped ? "b" : "w"]}
-          isTurn={chess.turn() === (isFlipped ? "b" : "w")}
+          isTurn={chess.turn() === botColor[0]}
           width={boardSizePx}
         />
 
@@ -242,7 +255,7 @@ export default function App() {
             style={{ height: boardSizePx }}
           >
             <div
-              className="absolute bottom-0 left-0 w-full bg-neutral-100 transition-all duration-500 ease-out"
+              className={`absolute ${isFlipped ? "top-0" : "bottom-0"} left-0 w-full bg-neutral-100 transition-all duration-500 ease-out`}
               style={{ height: `${whiteHeight}%` }}
             />
             <div
@@ -327,12 +340,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* Bottom player card */}
+        {/* Bottom player card — always you */}
         <PlayerCard
-          name={isFlipped ? "NECAI" : "You"}
-          subtitle={isFlipped ? "Bot · classical search" : "Human"}
+          name="You"
+          subtitle="Human"
           captured={captured[isFlipped ? "w" : "b"]}
-          isTurn={chess.turn() === (isFlipped ? "w" : "b")}
+          isTurn={chess.turn() === playerColor[0]}
           width={boardSizePx}
         />
       </main>
@@ -376,13 +389,21 @@ export default function App() {
             ) : (
               <table className="w-full text-sm">
                 <tbody>
-                  {movePairs.map((p) => (
-                    <tr key={p.num} className="border-b border-neutral-800/50 last:border-0">
-                      <td className="py-1.5 px-3 text-neutral-500 w-10 text-xs font-mono">{p.num}.</td>
-                      <td className="py-1.5 px-2 text-neutral-100 font-mono">{p.w}</td>
-                      <td className="py-1.5 px-2 text-neutral-100 font-mono">{p.b ?? ""}</td>
-                    </tr>
-                  ))}
+                  {movePairs.map((p) => {
+                    const w = moveToPieceAndText(p.w, "w")
+                    const b = moveToPieceAndText(p.b, "b")
+                    return (
+                      <tr key={p.num} className="border-b border-neutral-800/50 last:border-0">
+                        <td className="py-1.5 px-3 text-neutral-500 w-10 text-xs font-mono">{p.num}.</td>
+                        <td className="py-1.5 px-2 text-neutral-100 font-mono">
+                          <MoveCell piece={w.piece} text={w.text} />
+                        </td>
+                        <td className="py-1.5 px-2 text-neutral-100 font-mono">
+                          <MoveCell piece={b.piece} text={b.text} />
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             )}
@@ -431,6 +452,22 @@ function Stat({ label, value, mono }) {
       <span className="text-neutral-500">{label}</span>
       <span className={[mono ? "font-mono" : "", "text-neutral-200"].join(" ")}>{value}</span>
     </div>
+  )
+}
+
+function MoveCell({ piece, text }) {
+  if (!text) return null
+  return (
+    <span className="inline-flex items-center gap-1">
+      {piece && (
+        <img
+          src={`/pieces/${piece}.svg`}
+          alt={piece}
+          className="w-4 h-4 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+        />
+      )}
+      <span>{text}</span>
+    </span>
   )
 }
 
