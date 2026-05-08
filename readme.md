@@ -1,7 +1,7 @@
 # `NECAI`
 **`Neural-Enhanced Chess AI`**
 
-A from-scratch chess engine combining a hand-written C++ classical search with a PyTorch neural evaluator trained on Stockfish-labeled positions.
+A chess engine combining a C++ classical search with a PyTorch neural evaluator trained on Stockfish-labeled positions.
 
 ---
 
