@@ -5,6 +5,10 @@ A chess engine combining a C++ classical search with a PyTorch neural evaluator 
 
 ---
 
+![NECAI demo](img/demo.png)
+
+---
+
 ## How it plays
 
 For each move the API runs:
