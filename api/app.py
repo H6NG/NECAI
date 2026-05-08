@@ -250,6 +250,36 @@ def get_move():
             "reason": "checkmate" if board.is_checkmate() else "stalemate"
         })
 
+    if board.is_fifty_moves():
+        print("[move] early exit: 50-move rule")
+        print(f"[move] TOTAL: {time.time() - total_start:.4f}s")
+        return jsonify({
+            "move": None,
+            "fen": fen,
+            "game_over": True,
+            "reason": "fifty_moves"
+        })
+
+    if board.is_repetition(3):
+        print("[move] early exit: threefold repetition")
+        print(f"[move] TOTAL: {time.time() - total_start:.4f}s")
+        return jsonify({
+            "move": None,
+            "fen": fen,
+            "game_over": True,
+            "reason": "threefold_repetition"
+        })
+
+    if board.is_insufficient_material():
+        print("[move] early exit: insufficient material")
+        print(f"[move] TOTAL: {time.time() - total_start:.4f}s")
+        return jsonify({
+            "move": None,
+            "fen": fen,
+            "game_over": True,
+            "reason": "insufficient_material"
+        })
+
     chosen_move_uci = None
     source = None
     engine_data = None
@@ -279,7 +309,7 @@ def get_move():
 
     engine_start = time.time()
     if chosen_move_uci is None:
-        engine_data = engine_move(fen, depth=2)
+        engine_data = engine_move(fen, depth=4)
     engine_end = time.time()
     print(f"[move] engine step total: {engine_end - engine_start:.4f}s")
 

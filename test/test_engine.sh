@@ -66,7 +66,7 @@ run "King must escape check" "k7/8/8/8/8/8/r7/1K6 w - - 0 1" 1 '"game_over": fal
 run "King in check must block or capture" "k6r/8/8/8/8/8/8/K7 w - - 0 1" 1 '"game_over": false'
 run "Double check - king must move" "k7/8/8/8/8/8/1r6/KR6 w - - 0 1" 1 '"game_over": false'
 
-# Endgame
+# Endgame2
 run "King and queen vs king" "7k/8/8/8/8/8/8/K6Q w - - 0 1" 4 '"game_over": false'
 run "King and rook vs king" "7k/8/8/8/8/8/8/K6R w - - 0 1" 4 '"game_over": false'
 run "King and pawn vs king" "8/8/8/8/8/4K3/4P3/4k3 w - - 0 1" 3 '"game_over": false'
