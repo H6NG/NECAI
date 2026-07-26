@@ -1,10 +1,14 @@
+# Backend only. The frontend is a Static Site configured manually in the
+# Render dashboard (Root Directory: frontend, publish: dist) — deliberately
+# not declared here, so a Blueprint sync won't create a duplicate of it.
 services:
-  # Backend: Flask API + the C++ engine, compiled at build time.
   - type: web
     name: necai-api
     runtime: python
     plan: free
     branch: master
+    # Root directory is intentionally unset: `make` needs the repo root to see
+    # the Makefile and the .cpp sources, and gunicorn resolves `api.app` from there.
     buildCommand: |
       pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
       pip install -r requirements.txt
@@ -14,24 +18,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.13.4"
-      # Keep the HF cache inside the project dir so the opening book downloaded
-      # during build is still there at runtime (free instances have no disk).
+      # Keep the HF cache inside the project dir so the opening book fetched at
+      # build time is still present at runtime (free instances have no disk).
       - key: HF_HOME
         value: /opt/render/project/src/.hf
+      # Depth 4 is ~4.6s on a full core, which times out on 0.1 CPU. Depth 3 is ~0.5s.
       - key: ENGINE_DEPTH
         value: "3"
-
-  # Frontend: static build, served from CDN. No instance hours, never sleeps.
-  - type: web
-    name: necai-ui
-    runtime: static
-    plan: free
-    branch: master
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
-    envVars:
-      # Vite inlines this at BUILD time — changing it requires a redeploy.
-      # Update if Render assigns necai-api a different hostname.
-      - key: VITE_API_URL
-        value: https://necai-api.onrender.com
