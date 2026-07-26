@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -19,6 +20,10 @@ app = Flask(__name__);
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+# Search depth. Tunable without a code change: depth 4 takes ~4.6s on a full
+# core, which times out on Render's free tier (0.1 CPU). Depth 3 is ~0.5s.
+ENGINE_DEPTH = int(os.environ.get("ENGINE_DEPTH", "3"))
 
 print("Loading opening book...")
 parquet_path = hf_hub_download(
@@ -309,7 +314,7 @@ def get_move():
 
     engine_start = time.time()
     if chosen_move_uci is None:
-        engine_data = engine_move(fen, depth=4)
+        engine_data = engine_move(fen, depth=ENGINE_DEPTH)
     engine_end = time.time()
     print(f"[move] engine step total: {engine_end - engine_start:.4f}s")
 
@@ -431,5 +436,11 @@ def analyze():
         "game_over": engine_data.get("game_over", False)
     })
 
+@app.route("/health", methods=["GET"])
+def health():
+    """Cheap endpoint the UI pings on load to start waking a sleeping instance."""
+    return jsonify({"status": "ok", "depth": ENGINE_DEPTH})
+
+
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(port=5001)

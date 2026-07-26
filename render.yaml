@@ -1,0 +1,37 @@
+services:
+  # Backend: Flask API + the C++ engine, compiled at build time.
+  - type: web
+    name: necai-api
+    runtime: python
+    plan: free
+    branch: master
+    buildCommand: |
+      pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+      pip install -r requirements.txt
+      make
+      python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='h4ng/necai', filename='openings/train-00000-of-00001.parquet', repo_type='dataset')"
+    startCommand: gunicorn -w 1 -t 120 -b 0.0.0.0:$PORT api.app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.4"
+      # Keep the HF cache inside the project dir so the opening book downloaded
+      # during build is still there at runtime (free instances have no disk).
+      - key: HF_HOME
+        value: /opt/render/project/src/.hf
+      - key: ENGINE_DEPTH
+        value: "3"
+
+  # Frontend: static build, served from CDN. No instance hours, never sleeps.
+  - type: web
+    name: necai-ui
+    runtime: static
+    plan: free
+    branch: master
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Vite inlines this at BUILD time — changing it requires a redeploy.
+      # Update if Render assigns necai-api a different hostname.
+      - key: VITE_API_URL
+        value: https://necai-api.onrender.com

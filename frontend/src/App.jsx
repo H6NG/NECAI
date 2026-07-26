@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
 import { Chess } from "chess.js"
 
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5001"
+
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"]
 const PIECE_ORDER = ["P", "N", "B", "R", "Q"]
 const SQUARE_PX = 64
@@ -84,7 +86,7 @@ export default function App() {
 
   async function requestBotMove(c, color) {
     try {
-      const res = await fetch("http://localhost:5001/move", {
+      const res = await fetch(`${API_URL}/move`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fen: c.fen(), pgn_so_far: c.pgn(), color }),
