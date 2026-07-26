@@ -1,4 +1,7 @@
 venv/
 .env
 venv
-necai/
+necai/*.o
+necai_engine
+top_moves
+eval_stream
