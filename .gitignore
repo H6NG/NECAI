@@ -12,3 +12,4 @@ top_moves
 eval_stream
 
 __pycache__/
+.DS_Store
