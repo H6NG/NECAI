@@ -134,7 +134,7 @@ make top_moves        # builds optional candidate generator (used by hybrid_engi
 
 Python deps:
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 Frontend:

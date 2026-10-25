@@ -17,7 +17,7 @@ Each recorded row stores:
 From the repo root:
 
 ```bash
-./venv/bin/python playandlearn/generate-games.py \
+uv run playandlearn/generate-games.py \
   --games-per-color 25 \
   --max-workers 25
 ```
@@ -37,7 +37,7 @@ This writes local files to:
 To start each game from a random FEN already present in your local memoization subsets:
 
 ```bash
-./venv/bin/python playandlearn/generate-games-from-memoization.py \
+uv run playandlearn/generate-games-from-memoization.py \
   --games-per-color 25 \
   --max-workers 25
 ```
@@ -60,7 +60,7 @@ To generate genuinely random but legal starting positions, then continue the
 games against Stockfish:
 
 ```bash
-./venv/bin/python playandlearn/generate-games-from-random-fens.py \
+uv run playandlearn/generate-games-from-random-fens.py \
   --games-per-color 25 \
   --max-workers 25
 ```
@@ -81,7 +81,7 @@ Useful knobs:
 If you want the script to upload directly into your existing subsets:
 
 ```bash
-./venv/bin/python playandlearn/generate-games.py \
+uv run playandlearn/generate-games.py \
   --games-per-color 25 \
   --max-workers 25 \
   --push-to-hub

@@ -10,8 +10,8 @@ services:
     # Root directory is intentionally unset: `make` needs the repo root to see
     # the Makefile and the .cpp sources, and gunicorn resolves `api.app` from there.
     buildCommand: |
-      pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
-      pip install -r requirements.txt
+      pip install uv
+      uv sync --no-dev
       make
       python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='h4ng/necai', filename='openings/train-00000-of-00001.parquet', repo_type='dataset')"
     startCommand: gunicorn -w 1 -t 120 -b 0.0.0.0:$PORT api.app:app
